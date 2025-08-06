@@ -6,6 +6,7 @@ from streamlit_extras.let_it_rain import rain
 
 from classes.settings import Settings
 from classes.message_manager import MessageManager
+from classes.rag_manager import RAGManager
 
 
 class InterfaceManager(ABC):
@@ -57,6 +58,10 @@ class InterfaceManager(ABC):
         if "agent_executor" not in st.session_state:
             st.session_state.agent_executor = agent_manager
 
+        # Initialize RAG Manager
+        if not hasattr(cls, 'rag_manager'):
+            cls.rag_manager = RAGManager(settings)
+
         # Message history
         if "messages" not in st.session_state:
             st.session_state.messages = []
@@ -87,6 +92,7 @@ class InterfaceManager(ABC):
     def _body(cls, settings:Settings) -> None:
         """ The body of the chat. """
         cls._messages()
+        cls._question_image_uploader()
         cls._user_input(settings)
 
     @classmethod
@@ -95,10 +101,35 @@ class InterfaceManager(ABC):
         if prompt := st.chat_input("Posez votre question…"):
             cls._css()
 
-            # Handle uploaded files
+            # Handle uploaded files - Plus de vectorisation automatique
             uploaded_files = getattr(st.session_state, 'uploaded_files', None)
-            files_info = MessageManager.process_uploaded_files(uploaded_files, settings)
+            files_info = []  # Par défaut, pas d'images envoyées à l'agent
             
+            # Si l'utilisateur n'a pas vectorisé, proposer mode classique
+            if uploaded_files:
+                if not (hasattr(cls, 'rag_manager') and cls.rag_manager.embeddings):
+                    # Mode classique : envoyer les images à l'agent
+                    files_info = MessageManager.process_uploaded_files(uploaded_files, settings, None)
+                    st.sidebar.warning("⚠️ RAG non configuré, envoi des images brutes")
+                else:
+                    # L'utilisateur doit utiliser le bouton pour vectoriser
+                    st.sidebar.warning("💡 Utilisez le bouton 'Vectoriser les documents' d'abord")
+
+            # NOUVEAU: Handle question-specific images (uploaded via chat area)
+            question_images = getattr(st.session_state, 'question_images', None)
+            if question_images:
+                # Traiter les images de question directement (pas de vectorisation)
+                question_files_info = MessageManager.process_uploaded_files(question_images, settings, None)
+                files_info.extend(question_files_info)
+                # Nettoyer après usage
+                del st.session_state.question_images
+
+            # NOUVEAU: Recherche RAG (maintenant que les docs sont vectorisés)
+            rag_context = None
+            if hasattr(cls, 'rag_manager'):
+                rag_context = cls.rag_manager.retrieve_relevant_rules(prompt)
+
+
             # Prepare user & agent messages
             user_message = prompt + '  \n  \n' + MessageManager.get_files_summary(files_info)
             agent_message = MessageManager.create_agent_message(prompt, files_info)
@@ -112,7 +143,7 @@ class InterfaceManager(ABC):
             with st.chat_message("assistant"):
                 with st.spinner("Réflexion en cours..."):
 
-                    response = st.session_state.agent_executor.invoke(agent_message)
+                    response = st.session_state.agent_executor.invoke(agent_message, rag_context)
 
                     # Append response to history
                     st.session_state.chat_history.append({
@@ -128,8 +159,6 @@ class InterfaceManager(ABC):
             if hasattr(st.session_state, 'uploaded_files'):
                 del st.session_state.uploaded_files
 
-
-
             st.rerun()
 
     @classmethod
@@ -139,6 +168,7 @@ class InterfaceManager(ABC):
         cls._file_uploader()
         cls._debug_checkbox()
         cls._reset_button()
+        cls._clear_rag_button()
         cls._unsatisfied_button()
         cls._satisfied_button()
 
@@ -155,8 +185,57 @@ class InterfaceManager(ABC):
         if uploaded_files:
             st.session_state.uploaded_files = uploaded_files
             st.sidebar.success(f"{len(uploaded_files)} fichier(s) ajouté(s)")
+            
+            # Bouton de vectorisation
+            if hasattr(cls, 'rag_manager') and cls.rag_manager.embeddings:
+                if st.sidebar.button("🚀 Vectoriser les documents", type="primary"):
+                    with st.spinner("Vectorisation en cours..."):
+                        from classes.message_manager import MessageManager
+                        tokens_info = MessageManager.process_and_vectorize_files(
+                            uploaded_files, cls._settings, cls.rag_manager
+                        )
+                        
+                        if tokens_info:
+                            st.sidebar.success("✅ Documents vectorisés !")
+                            st.sidebar.info(f"💰 Coût: ~{tokens_info.get('total_tokens', 0)} tokens")
+                        else:
+                            st.sidebar.success("✅ Documents vectorisés !")
+                        
+                        # Supprimer les fichiers uploadés pour éviter re-vectorisation
+                        del st.session_state.uploaded_files
+                        st.rerun()
+                        
+                st.sidebar.info("👆 Cliquez pour lancer l'analyse IA des règles")
+            else:
+                st.sidebar.warning("⚠️ RAG non configuré")
 
         return uploaded_files
+
+    @classmethod
+    def _question_image_uploader(cls) -> None:
+        """ Image uploader for one-time questions in the main chat area """
+        with st.expander("📷 Joindre une image à votre question", expanded=False):
+            st.markdown("**Pour cette question uniquement** (pas de vectorisation)")
+            question_images = st.file_uploader(
+                "Ajouter une image pour illustrer votre question",
+                type=['png', 'jpg', 'jpeg'],
+                accept_multiple_files=True,
+                key="question_image_uploader",
+                help="Ces images seront envoyées directement avec votre question, sans être vectorisées dans le RAG"
+            )
+            
+            if question_images:
+                st.session_state.question_images = question_images
+                st.success(f"🖼️ {len(question_images)} image(s) prête(s) pour la prochaine question")
+                
+                # Aperçu des images
+                cols = st.columns(min(len(question_images), 3))
+                for i, img in enumerate(question_images[:3]):  # Max 3 previews
+                    with cols[i % 3]:
+                        st.image(img, caption=img.name, width=100)
+                
+                if len(question_images) > 3:
+                    st.info(f"... et {len(question_images) - 3} autre(s)")
 
     @classmethod
     def _messages(cls) -> None:
@@ -202,6 +281,19 @@ class InterfaceManager(ABC):
             if "agent_executor" in st.session_state:
                 st.session_state.agent_executor.clear_memory()
             st.rerun()
+
+    @classmethod
+    def _clear_rag_button(cls) -> None:
+        """ A button to clear the RAG vector store. """
+        if hasattr(cls, 'rag_manager') and cls.rag_manager.vector_store:
+            if st.sidebar.button("🗑️ Vider le store RAG", help="Supprime tous les documents vectorisés"):
+                try:
+                    # Vider le store vectoriel
+                    cls.rag_manager.clear_vector_store()
+                    st.sidebar.success("✅ Store RAG vidé !")
+                    st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"❌ Erreur: {e}")
 
     @classmethod
     def _unsatisfied_button(cls):

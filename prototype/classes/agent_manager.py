@@ -19,12 +19,14 @@ class AgentManager:
             self._chat_model = settings.agent_model
         return self
 
-    def invoke(self, message_data):
+    def invoke(self, message_data, rag_context=None):
         """Appel direct au modèle Azure OpenAI sans agent ReAct"""
-        
-        # Préparer les messages
-        messages = [{"role": "system", "content": self._settings.system_prompt}]
-        
+
+
+        # Préparer les messages (contexte RAG intégré dans le system prompt)
+        messages = [{"role": "system", "content": self._build_system_prompt(rag_context)}]
+
+
         # Ajouter l'historique de conversation
         messages.extend(self._conversation_history)
         
@@ -65,6 +67,21 @@ class AgentManager:
     def clear_memory(self):
         """Vider l'historique de conversation"""
         self._conversation_history = []
+
+    def _build_system_prompt(self, rag_context=None):
+        """Construit le prompt système avec contexte RAG optionnel"""
+        base_prompt = self._settings.system_prompt
+        
+        if rag_context:
+            enhanced_prompt = f"""{base_prompt}
+
+CONTEXTE ADDITIONNEL DES RÈGLES:
+{rag_context}
+
+Utilise ce contexte pour enrichir tes réponses, mais reste précis et factuel."""
+            return enhanced_prompt
+        
+        return base_prompt
 
     @property
     def executor(self):

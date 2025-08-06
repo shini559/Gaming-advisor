@@ -11,7 +11,7 @@ from classes.settings import Settings
 class MessageManager:
     
     @staticmethod
-    def process_uploaded_files(uploaded_files:list, settings:Settings) -> List[Dict[str, Any]]:
+    def process_uploaded_files(uploaded_files:list, settings:Settings, rag_manager=None) -> List[Dict[str, Any]]:
         """Handles uploaded files and returns structured infos"""
 
         files_info = []
@@ -21,13 +21,63 @@ class MessageManager:
             
         for file in uploaded_files:
             if file.type.startswith('image/'):
-                files_info.append(MessageManager._process_image(file, settings))
+                image = MessageManager._process_image(file, settings)
+                files_info.append(image)
+
+
+                if rag_manager:
+                    rag_manager.process_game_document(image)
+
+
             elif file.type == 'application/pdf':
                 # _process_pdf returns a list of images processed from the PDF
                 pdf_images = MessageManager._process_pdf(file, settings)
                 files_info.extend(pdf_images)
-                
+
+                # Traitement RAG si présent
+                if rag_manager:
+                    rag_manager.process_game_document(pdf_images)
+
         return files_info
+    
+    @staticmethod
+    def process_and_vectorize_files(uploaded_files: list, settings: Settings, rag_manager):
+        """Traite et vectorise les fichiers uploadés (sans retourner les images)"""
+        
+        if not uploaded_files or not rag_manager:
+            return None
+        
+        print(f"🔄 RAG: Vectorisation de {len(uploaded_files)} fichier(s)")
+        
+        total_tokens_info = {
+            "vision_tokens": 0,
+            "embedding_tokens": 0,
+            "total_tokens": 0
+        }
+        
+        for file in uploaded_files:
+            if file.type.startswith('image/'):
+                # Traiter image unique
+                image = MessageManager._process_image(file, settings)
+                tokens_info = rag_manager.process_game_document([image])  # Liste pour uniformité
+                print(f"📷 RAG: Image {file.name} vectorisée")
+                
+            elif file.type == 'application/pdf':
+                # Traiter PDF → images
+                pdf_images = MessageManager._process_pdf(file, settings)
+                tokens_info = rag_manager.process_game_document(pdf_images)
+                print(f"📄 RAG: PDF {file.name} ({len(pdf_images)} pages) vectorisé")
+            
+            # Accumuler les tokens
+            if tokens_info:
+                total_tokens_info["vision_tokens"] += tokens_info.get("vision_tokens", 0)
+                total_tokens_info["embedding_tokens"] += tokens_info.get("embedding_tokens", 0)
+                total_tokens_info["total_tokens"] += tokens_info.get("total_tokens", 0)
+        
+        print("✅ RAG: Vectorisation terminée, documents prêts pour recherche")
+        print(f"📊 TOTAL SESSION: {total_tokens_info['total_tokens']} tokens (Vision: {total_tokens_info['vision_tokens']}, Embeddings: {total_tokens_info['embedding_tokens']})")
+        
+        return total_tokens_info
     
     @staticmethod
     def _resize_image(image, settings:Settings):

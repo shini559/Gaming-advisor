@@ -12,3 +12,4 @@ openai
 python-dotenv
 PyMuPDF
 pillow
+pytest

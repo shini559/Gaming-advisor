@@ -44,6 +44,13 @@ class Settings:
         deployment_name="gpt-4o-2"
     )
 
+    rag_vision_model = AzureChatOpenAI(
+        api_version="2024-12-01-preview",
+        azure_endpoint="https://gameadvisorai.openai.azure.com/",
+        api_key=os.getenv("SUBSCRIPTION_KEY"),
+        deployment_name="gpt-4o-2"
+    )
+
     system_prompt: str = '''You are a game master & boardgame assistant. Your role is to assist board gamers in setting up their games, understanding the rules, calculate the score.
 
 The users will send you data. You will analyze this data and use it to answer their questions. ONLY USE THE DATA THEY PROVIDE TO ANSWER THEIR QUESTIONS! YOU MUST NEVER ANSWER A QUESTION ABOUT GAME RULES IF YOU HAVE NOT BEEN PROVIDED DATA BY THE USER!

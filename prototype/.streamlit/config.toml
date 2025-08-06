@@ -1,0 +1,17 @@
+[theme]
+primaryColor = "DarkOrange"
+backgroundColor = "DarkCyan"
+secondaryBackgroundColor = "Snow"
+codeBackgroundColor = "DarkSlateGray"
+textColor = "SteelBlue"
+linkColor = "#764ba2"
+baseRadius = "10px"
+showWidgetBorder = false
+font = "monospace"
+baseFontSize=15
+[theme.sidebar]
+primaryColor = "MediumTurquoise"
+backgroundColor = "CadetBlue"
+textColor = "Ivory"
+baseRadius = "7px"
+font = "sans-serif"

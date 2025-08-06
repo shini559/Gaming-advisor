@@ -1,8 +1,8 @@
 [theme]
-primaryColor = "DarkOrange"
-backgroundColor = "DarkCyan"
+primaryColor = "pink"
+backgroundColor = "#e07a5f"
 secondaryBackgroundColor = "Snow"
-codeBackgroundColor = "DarkSlateGray"
+codeBackgroundColor = "green"
 textColor = "SteelBlue"
 linkColor = "#764ba2"
 baseRadius = "10px"
@@ -11,7 +11,7 @@ font = "monospace"
 baseFontSize=15
 [theme.sidebar]
 primaryColor = "MediumTurquoise"
-backgroundColor = "CadetBlue"
-textColor = "Ivory"
+backgroundColor = "#81b29a"
+textColor = "#f4f1de"
 baseRadius = "7px"
 font = "sans-serif"

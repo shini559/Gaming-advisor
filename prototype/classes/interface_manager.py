@@ -178,10 +178,9 @@ class InterfaceManager(ABC):
         """ Stores the debug information in the messages. """
         st.sidebar.markdown("""
             <div class="footer-info">
-                <strong>ℹ️ Informations importantes :</strong><br>
-                Ce chatbot est conçu pour vous orienter vers les aides disponibles. 
-                Pour des démarches officielles, consultez toujours les sites gouvernementaux officiels 
-                ou contactez les services compétents.
+                <strong>ℹ️ Attention :</strong><br>
+                Ce chatbot est conçu pour vous assister dans vos parties grâce à l'IA. 
+                Ses informations peuvent être erronées.
             </div>
             """, unsafe_allow_html=True)
 
@@ -230,7 +229,7 @@ class InterfaceManager(ABC):
                     color: Snow;
                 }
                 .main-header {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, #ff7d00 0%, #ffecd1 100%);
                     padding: 40px 20px;
                     border-radius: 15px;
                     margin-bottom: 2rem;

@@ -131,7 +131,7 @@ class AgentManager:
 
     def _build_system_prompt(self, rag_context=None):
         """Construit le prompt système avec contexte RAG optionnel"""
-        base_prompt = self._settings.system_prompt
+        base_prompt = self._settings.agent_prompt
         
         if rag_context:
             # Gérer les deux types de contexte RAG

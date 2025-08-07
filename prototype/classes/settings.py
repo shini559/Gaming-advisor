@@ -84,11 +84,50 @@ class Settings:
     # En mode direct, on utilise directement l'agent_model principal
     # (pas besoin de modèle séparé car pas de RAG)
 
-    system_prompt: str = '''You are a game master & boardgame assistant. Your role is to assist board gamers in setting up their games, understanding the rules, calculate the score.
+    # === PROMPTS SYSTÈME ===
+    agent_prompt: str = '''You are a game master & boardgame assistant. Your role is to assist board gamers in setting up their games, understanding the rules, calculate the score.
 
 The users will send you data. You will analyze this data and use it to answer their questions. ONLY USE THE DATA THEY PROVIDE TO ANSWER THEIR QUESTIONS! YOU MUST NEVER ANSWER A QUESTION ABOUT GAME RULES IF YOU HAVE NOT BEEN PROVIDED DATA BY THE USER!
 
 Answer questions clearly and directly. Use simple French. Ask questions if you need clarification.'''
+
+    # === PROMPTS VISION/RAG ===
+    # Prompt pour l'analyse vision du RAG classique (extraction de texte complet)
+    rag_vision_prompt: str = """Analyse cette page de règles de jeu:
+
+1. TEXTE: Extrait tout le texte visible
+2. SCHÉMAS: Décris précisément tous diagrammes, tableaux, illustrations
+3. ÉLÉMENTS: Identifie et décris précisemment les composants (cartes, pions, dés, plateau, etc.)
+4. RÈGLES: Extrait les règles et mécaniques spécifiques
+5. SECTIONS: Catégorise (setup/mise en place, tour de jeu, scoring/points, fin de partie)
+
+Format ta réponse en JSON:
+{
+    "text_content": "texte intégral visible",
+    "diagrams": [{"type": "tableau|schéma|illustration", "description": "..."}],
+    "game_elements": ["cartes", "jetons", ...],
+    "rules": [{"rule": "règle spécifique", "context": "contexte"}],
+    "sections": [{"title": "...", "type": "setup|gameplay|scoring|endgame", "content": "..."}]
+}"""
+
+    # Prompt pour l'analyse vision du RAG hybride (extraction de métadonnées)
+    hybrid_vision_prompt: str = """Analyse cette page de règles de jeu et extrait des métadonnées structurées en anglais:
+
+1. ÉLÉMENTS: Liste tous les composants de jeu visibles (cartes, pions, dés, plateau, jetons, etc.)
+2. SCHÉMAS: liste tous les diagrammes, tableaux, illustrations avec ce qu'ils représentent
+3. ACTIONS: Identifie toutes les actions/mécaniques mentionnées (placer, déplacer, piocher, etc.)
+4. CONCEPTS: Extrait les concepts clés (points, tours, victoire, setup, etc.)
+5. SECTIONS: Catégorise le contenu (setup, gameplay, scoring, endgame)
+
+Format JSON structuré pour la recherche:
+{
+    "game_elements": ["composant1", "composant2", ...],
+    "diagrams": [{"type": "type", "description": "description détaillée", "elements": ["elem1", "elem2"]}],
+    "game_actions": ["action1", "action2", ...],
+    "key_concepts": ["concept1", "concept2", ...],
+    "sections": [{"title": "titre", "type": "setup|gameplay|scoring|endgame", "keywords": ["mot1", "mot2"]}],
+    "searchable_text": "résumé textuel pour recherche sémantique"
+}"""
 
     @classmethod
     def get_models_info(cls):

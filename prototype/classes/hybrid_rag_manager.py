@@ -119,23 +119,7 @@ class HybridRAGManager:
         # Essayer analyse vision réelle
         if self.vision_model:
             try:
-                prompt = """Analyse cette page de règles de jeu et extrait des métadonnées structurées en anglais:
-
-1. ÉLÉMENTS: Liste tous les composants de jeu visibles (cartes, pions, dés, plateau, jetons, etc.)
-2. SCHÉMAS: liste tous les diagrammes, tableaux, illustrations avec ce qu'ils représentent
-3. ACTIONS: Identifie toutes les actions/mécaniques mentionnées (placer, déplacer, piocher, etc.)
-4. CONCEPTS: Extrait les concepts clés (points, tours, victoire, setup, etc.)
-5. SECTIONS: Catégorise le contenu (setup, gameplay, scoring, endgame)
-
-Format JSON structuré pour la recherche:
-{
-    "game_elements": ["composant1", "composant2", ...],
-    "diagrams": [{"type": "type", "description": "description détaillée", "elements": ["elem1", "elem2"]}],
-    "game_actions": ["action1", "action2", ...],
-    "key_concepts": ["concept1", "concept2", ...],
-    "sections": [{"title": "titre", "type": "setup|gameplay|scoring|endgame", "keywords": ["mot1", "mot2"]}],
-    "searchable_text": "résumé textuel pour recherche sémantique"
-}"""
+                prompt = self.settings.hybrid_vision_prompt
 
                 message = HumanMessage(content=[
                     {"type": "text", "text": prompt},

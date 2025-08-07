@@ -7,6 +7,7 @@ from langchain_core.messages import HumanMessage
 class RAGManager:
     def __init__(self, settings):
         print("🚀 RAG: Initialisation")
+        self.settings = settings
         
         # Configuration embeddings - utiliser celui des settings s'il existe
         if hasattr(settings, 'rag_embedding_model') and settings.rag_embedding_model:
@@ -91,22 +92,7 @@ class RAGManager:
         # Essayer analyse vision réelle si modèle disponible
         if self.vision_model:
             try:
-                prompt = """Analyse cette page de règles de jeu:
-
-1. TEXTE: Extrait tout le texte visible
-2. SCHÉMAS: Décris précisément tous diagrammes, tableaux, illustrations
-3. ÉLÉMENTS: Identifie et décris précisemment les composants (cartes, pions, dés, plateau, etc.)
-4. RÈGLES: Extrait les règles et mécaniques spécifiques
-5. SECTIONS: Catégorise (setup/mise en place, tour de jeu, scoring/points, fin de partie)
-
-Format ta réponse en JSON:
-{
-    "text_content": "texte intégral visible",
-    "diagrams": [{"type": "tableau|schéma|illustration", "description": "..."}],
-    "game_elements": ["cartes", "jetons", ...],
-    "rules": [{"rule": "règle spécifique", "context": "contexte"}],
-    "sections": [{"title": "...", "type": "setup|gameplay|scoring|endgame", "content": "..."}]
-}"""
+                prompt = self.settings.rag_vision_prompt
 
                 message = HumanMessage(content=[
                     {"type": "text", "text": prompt},

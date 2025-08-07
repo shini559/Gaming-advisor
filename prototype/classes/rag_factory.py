@@ -40,13 +40,13 @@ class BaseRAGInterface(ABC):
 class ClassicRAGAdapter(BaseRAGInterface):
     """Adaptateur pour le RAG classique"""
     
-    def __init__(self, settings):
+    def __init__(self, settings, game_name=None):
         # Créer un settings adapté avec les modèles RAG classique
-        rag_settings = self._create_rag_settings(settings)
+        rag_settings = self._create_rag_settings(settings, game_name)
         self.rag_manager = RAGManager(rag_settings)
         self.rag_type = RAGType.CLASSIC
     
-    def _create_rag_settings(self, settings):
+    def _create_rag_settings(self, settings, game_name=None):
         """Crée un objet settings avec les modèles RAG classique"""
         class RAGSettings:
             def __init__(self, base_settings):
@@ -56,6 +56,8 @@ class ClassicRAGAdapter(BaseRAGInterface):
                 self.rag_vision_model = base_settings.rag_vision_model
                 # Pour les embeddings, on doit configurer directement l'objet
                 self.rag_embedding_model = base_settings.rag_embedding_model
+                # Copier les prompts depuis les settings
+                self.rag_vision_prompt = base_settings.rag_vision_prompt
                 
         return RAGSettings(settings)
     
@@ -96,13 +98,13 @@ class ClassicRAGAdapter(BaseRAGInterface):
 class HybridRAGAdapter(BaseRAGInterface):
     """Adaptateur pour le RAG hybride"""
     
-    def __init__(self, settings):
+    def __init__(self, settings, game_name=None):
         # Créer un settings adapté avec les modèles RAG hybride
-        hybrid_settings = self._create_hybrid_settings(settings)
-        self.rag_manager = HybridRAGManager(hybrid_settings)
+        hybrid_settings = self._create_hybrid_settings(settings, game_name)
+        self.rag_manager = HybridRAGManager(hybrid_settings, game_name)
         self.rag_type = RAGType.HYBRID
     
-    def _create_hybrid_settings(self, settings):
+    def _create_hybrid_settings(self, settings, game_name=None):
         """Crée un objet settings avec les modèles RAG hybride"""
         class HybridSettings:
             def __init__(self, base_settings):
@@ -114,6 +116,8 @@ class HybridRAGAdapter(BaseRAGInterface):
                 self.hybrid_embedding_model = base_settings.hybrid_embedding_model
                 # Utiliser l'agent principal pour toutes les méthodes
                 self.agent_model = base_settings.agent_model
+                # Copier le prompt vision hybride
+                self.hybrid_vision_prompt = base_settings.hybrid_vision_prompt
                 
         return HybridSettings(settings)
     
@@ -154,8 +158,9 @@ class HybridRAGAdapter(BaseRAGInterface):
 class DirectRAGAdapter(BaseRAGInterface):
     """Adaptateur pour le mode direct (pas de RAG, envoi direct des images)"""
     
-    def __init__(self, settings):
+    def __init__(self, settings, game_name=None):
         self.settings = settings
+        self.game_name = game_name
         self.rag_type = RAGType.DIRECT
         self.stored_images = []  # Stockage temporaire des images
     
@@ -208,7 +213,7 @@ class RAGFactory:
     _current_type = None
     
     @classmethod
-    def create_rag(cls, rag_type: RAGType, settings, force_recreate=False) -> BaseRAGInterface:
+    def create_rag(cls, rag_type: RAGType, settings, force_recreate=False, game_name: str = None) -> BaseRAGInterface:
         """
         Crée ou récupère une instance RAG du type spécifié
         
@@ -234,11 +239,11 @@ class RAGFactory:
                 del old_instance
             
             if rag_type == RAGType.CLASSIC:
-                cls._instances[type_key] = ClassicRAGAdapter(settings)
+                cls._instances[type_key] = ClassicRAGAdapter(settings, game_name)
             elif rag_type == RAGType.HYBRID:
-                cls._instances[type_key] = HybridRAGAdapter(settings)
+                cls._instances[type_key] = HybridRAGAdapter(settings, game_name)
             elif rag_type == RAGType.DIRECT:
-                cls._instances[type_key] = DirectRAGAdapter(settings)
+                cls._instances[type_key] = DirectRAGAdapter(settings, game_name)
             else:
                 raise ValueError(f"Type RAG non supporté: {rag_type}")
         

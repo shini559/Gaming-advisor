@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+chroma_db/
+stored_images/
+
 # C extensions
 *.so
 

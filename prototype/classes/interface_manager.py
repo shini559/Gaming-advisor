@@ -6,7 +6,8 @@ from streamlit_extras.let_it_rain import rain
 
 from classes.settings import Settings
 from classes.message_manager import MessageManager
-from classes.rag_manager import RAGManager
+from classes.rag_factory import RAGFactory, RAGType, get_rag_type_from_string
+from classes.log_capture import log_capture
 
 
 class InterfaceManager(ABC):
@@ -58,9 +59,11 @@ class InterfaceManager(ABC):
         if "agent_executor" not in st.session_state:
             st.session_state.agent_executor = agent_manager
 
-        # Initialize RAG Manager
-        if not hasattr(cls, 'rag_manager'):
-            cls.rag_manager = RAGManager(settings)
+        # Initialize RAG Manager via Factory
+        if not hasattr(cls, 'rag_manager') or not cls.rag_manager:
+            # Default to classic RAG
+            rag_type = getattr(st.session_state, 'rag_type', RAGType.CLASSIC)
+            cls.rag_manager = RAGFactory.create_rag(rag_type, settings)
 
         # Message history
         if "messages" not in st.session_state:
@@ -93,6 +96,7 @@ class InterfaceManager(ABC):
         """ The body of the chat. """
         cls._messages()
         cls._question_image_uploader()
+        cls._debug_logs_display()
         cls._user_input(settings)
 
     @classmethod
@@ -164,13 +168,11 @@ class InterfaceManager(ABC):
     @classmethod
     def _sidebar(cls) -> None:
         """ The sidebar of the chat. """
-        cls._important_context()
+        cls._rag_method_selector()
         cls._file_uploader()
         cls._debug_checkbox()
         cls._reset_button()
         cls._clear_rag_button()
-        cls._unsatisfied_button()
-        cls._satisfied_button()
 
     @classmethod
     def _file_uploader(cls):
@@ -186,8 +188,29 @@ class InterfaceManager(ABC):
             st.session_state.uploaded_files = uploaded_files
             st.sidebar.success(f"{len(uploaded_files)} fichier(s) ajouté(s)")
             
-            # Bouton de vectorisation
-            if hasattr(cls, 'rag_manager') and cls.rag_manager.embeddings:
+            # Logique de traitement selon le type de RAG
+            current_rag_type = getattr(st.session_state, 'rag_type', RAGType.CLASSIC)
+            
+            if current_rag_type == RAGType.DIRECT:
+                # Mode direct : juste stocker les images
+                if st.sidebar.button("📋 Stocker pour envoi direct", type="primary"):
+                    with st.spinner("Préparation des images..."):
+                        from classes.message_manager import MessageManager
+                        images_data = MessageManager.process_uploaded_files(uploaded_files, cls._settings, None)
+                        
+                        # Stocker dans le DirectRAGAdapter
+                        cls.rag_manager.process_game_document(images_data)
+                        
+                        st.sidebar.success("✅ Images prêtes pour envoi direct !")
+                        
+                        # Supprimer les fichiers uploadés
+                        del st.session_state.uploaded_files
+                        st.rerun()
+                        
+                st.sidebar.info("👆 Les images seront envoyées directement au modèle")
+                
+            elif hasattr(cls, 'rag_manager') and cls.rag_manager.embeddings:
+                # Mode classique/hybride : vectorisation
                 if st.sidebar.button("🚀 Vectoriser les documents", type="primary"):
                     with st.spinner("Vectorisation en cours..."):
                         from classes.message_manager import MessageManager
@@ -210,6 +233,67 @@ class InterfaceManager(ABC):
                 st.sidebar.warning("⚠️ RAG non configuré")
 
         return uploaded_files
+
+    @classmethod  
+    def _rag_method_selector(cls) -> None:
+        """ RAG method selector """
+        st.sidebar.markdown("### 🎯 Méthode RAG")
+        
+        # Options disponibles
+        rag_options = {
+            "Classique": RAGType.CLASSIC,
+            "Hybride": RAGType.HYBRID,
+            "Direct": RAGType.DIRECT
+        }
+        
+        # Récupérer choix actuel
+        current_type = getattr(st.session_state, 'rag_type', RAGType.CLASSIC)
+        current_index = 0
+        if current_type == RAGType.HYBRID:
+            current_index = 1
+        elif current_type == RAGType.DIRECT:
+            current_index = 2
+        
+        # Sélecteur radio
+        selected_option = st.sidebar.radio(
+            "Choisir la méthode RAG:",
+            options=list(rag_options.keys()),
+            index=current_index,
+            help="Classique: Texte vectorisé\nHybride: Métadonnées + Images directes\nDirect: Images envoyées directement sans RAG"
+        )
+        
+        selected_type = rag_options[selected_option]
+        
+        # Si changement de type
+        if selected_type != getattr(st.session_state, 'rag_type', RAGType.CLASSIC):
+            st.session_state.rag_type = selected_type
+            
+            # Changer de RAG via factory (forcer recréation pour éviter le cache)
+            try:
+                cls.rag_manager = RAGFactory.create_rag(selected_type, cls._settings, force_recreate=True)
+                st.sidebar.success(f"✅ Basculé vers RAG {selected_option}")
+                st.rerun()
+            except Exception as e:
+                st.sidebar.error(f"❌ Erreur changement RAG: {e}")
+        
+        # Afficher infos sur le RAG actuel
+        if hasattr(cls, 'rag_manager'):
+            try:
+                info = cls.rag_manager.get_vector_store_info()
+                rag_type_display = info.get("rag_type", "Inconnu")
+                doc_count = info.get("document_count", 0)
+                
+                if selected_type == RAGType.HYBRID:
+                    image_count = info.get("image_count", 0)
+                    st.sidebar.info(f"📊 **{rag_type_display}**\n\n{doc_count} métadonnées, {image_count} images")
+                elif selected_type == RAGType.DIRECT:
+                    image_count = info.get("image_count", 0)
+                    st.sidebar.info(f"📊 **{rag_type_display}**\n\n{image_count} images prêtes")
+                else:
+                    st.sidebar.info(f"📊 **{rag_type_display}**\n\n{doc_count} documents")
+                    
+            except Exception as e:
+                st.sidebar.warning(f"⚠️ Infos RAG indisponibles: {e}")
 
     @classmethod
     def _question_image_uploader(cls) -> None:
@@ -238,6 +322,92 @@ class InterfaceManager(ABC):
                     st.info(f"... et {len(question_images) - 3} autre(s)")
 
     @classmethod
+    def _debug_logs_display(cls) -> None:
+        """ Affiche les logs de debug si le mode debug est activé """
+        if not st.session_state.debug_mode:
+            return
+            
+        # Récupérer les logs récents
+        logs = log_capture.get_recent_logs(limit=200)
+        
+        if logs:
+            with st.expander("📊 Console Debug (logs temps réel)", expanded=False):
+                # Bouton pour vider les logs
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    if st.button("🗑️ Vider logs"):
+                        log_capture.clear_logs()
+                        st.rerun()
+                
+                with col2:
+                    st.write(f"**{len(logs)} entrées de log**")
+                
+                # Container pour les logs avec scrolling
+                log_container = st.container()
+                
+                with log_container:
+                    # Afficher les logs dans l'ordre chronologique inverse (plus récents en haut)
+                    for log_entry in reversed(logs[-50:]):  # Limiter à 50 logs pour éviter la surcharge
+                        timestamp = log_entry['timestamp'].strftime("%H:%M:%S.%f")[:-3]
+                        message = log_entry['message']
+                        is_error = log_entry['is_error']
+                        
+                        # Style différent pour les erreurs
+                        if is_error:
+                            st.markdown(f"""
+                                <div style="
+                                    background-color: #f8d7da; 
+                                    color: #721c24; 
+                                    padding: 5px 10px; 
+                                    border-radius: 4px; 
+                                    border-left: 4px solid #dc3545;
+                                    margin: 2px 0;
+                                    font-family: 'Courier New', monospace;
+                                    font-size: 12px;
+                                ">
+                                    <strong>[{timestamp}] ❌</strong> {message}
+                                </div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            # Coloration selon le type de log
+                            if any(keyword in message for keyword in ['✅', 'SUCCESS', 'success']):
+                                bg_color = "#d4edda"
+                                text_color = "#155724" 
+                                border_color = "#28a745"
+                            elif any(keyword in message for keyword in ['⚠️', 'WARNING', 'warning']):
+                                bg_color = "#fff3cd"
+                                text_color = "#856404"
+                                border_color = "#ffc107"
+                            elif any(keyword in message for keyword in ['🔍', 'DEBUG', 'debug']):
+                                bg_color = "#e2e3e5"
+                                text_color = "#383d41"
+                                border_color = "#6c757d"
+                            elif any(keyword in message for keyword in ['🔄', 'PROCESSING', 'processing']):
+                                bg_color = "#cce7ff"
+                                text_color = "#004085"
+                                border_color = "#007bff"
+                            else:
+                                bg_color = "#f8f9fa"
+                                text_color = "#495057"
+                                border_color = "#dee2e6"
+                            
+                            st.markdown(f"""
+                                <div style="
+                                    background-color: {bg_color}; 
+                                    color: {text_color}; 
+                                    padding: 5px 10px; 
+                                    border-radius: 4px; 
+                                    border-left: 4px solid {border_color};
+                                    margin: 2px 0;
+                                    font-family: 'Courier New', monospace;
+                                    font-size: 12px;
+                                    line-height: 1.4;
+                                ">
+                                    <strong>[{timestamp}]</strong> {message}
+                                </div>
+                            """, unsafe_allow_html=True)
+
+    @classmethod
     def _messages(cls) -> None:
         """ Prints the messages in the chat. """
         for message in st.session_state.messages:
@@ -253,25 +423,29 @@ class InterfaceManager(ABC):
                     st.markdown(message["content"])
 
     @classmethod
-    def _important_context(cls) -> None:
-        """ Stores the debug information in the messages. """
-        st.sidebar.markdown("""
-            <div class="footer-info">
-                <strong>ℹ️ Attention :</strong><br>
-                Ce chatbot est conçu pour vous assister dans vos parties grâce à l'IA. 
-                Ses informations peuvent être erronées.
-            </div>
-            """, unsafe_allow_html=True)
-
-    @classmethod
     def _debug_checkbox(cls) -> None:
         """ Prints and handles a debug checkbox. """
         debug_mode = st.sidebar.checkbox("Afficher debug", value=st.session_state.debug_mode)
 
-        # Mise à jour de settings.params['debug']
+        # Gestion de la capture des logs
         if debug_mode != st.session_state.debug_mode:
             st.session_state.debug_mode = debug_mode
+            
+            if debug_mode:
+                # Démarrer la capture des logs
+                log_capture.start_capture()
+                log_capture.clear_logs()  # Vider les anciens logs
+            else:
+                # Arrêter la capture des logs
+                log_capture.stop_capture()
+                
             st.rerun()
+        
+        # Gérer la capture pendant que le mode debug est actif
+        if debug_mode and not log_capture.is_capturing:
+            log_capture.start_capture()
+        elif not debug_mode and log_capture.is_capturing:
+            log_capture.stop_capture()
 
     @classmethod
     def _reset_button(cls) -> None:
@@ -284,33 +458,64 @@ class InterfaceManager(ABC):
 
     @classmethod
     def _clear_rag_button(cls) -> None:
-        """ A button to clear the RAG vector store. """
-        if hasattr(cls, 'rag_manager') and cls.rag_manager.vector_store:
-            if st.sidebar.button("🗑️ Vider le store RAG", help="Supprime tous les documents vectorisés"):
+        """ Buttons to clear different RAG vector stores. """
+        st.sidebar.markdown("### 🗑️ Vider les stores")
+        
+        # Récupérer les infos de tous les stores via la Factory
+        try:
+            all_stores_info = RAGFactory.get_all_store_info()
+            
+            # Bouton pour vider le store RAG Classique
+            classic_info = all_stores_info.get('classic', {})
+            classic_doc_count = classic_info.get('document_count', 0)
+            
+            if st.sidebar.button(
+                f"🗑️ Vider RAG Classique ({classic_doc_count})", 
+                help="Supprime tous les documents vectorisés du RAG classique",
+                disabled=classic_doc_count == 0
+            ):
                 try:
-                    # Vider le store vectoriel
-                    cls.rag_manager.clear_vector_store()
-                    st.sidebar.success("✅ Store RAG vidé !")
+                    # Créer temporairement une instance RAG classique pour la vider
+                    classic_rag = RAGFactory.create_rag(RAGType.CLASSIC, cls._settings, force_recreate=False)
+                    classic_rag.clear_vector_store()
+                    st.sidebar.success("✅ Store RAG Classique vidé !")
                     st.rerun()
                 except Exception as e:
-                    st.sidebar.error(f"❌ Erreur: {e}")
-
-    @classmethod
-    def _unsatisfied_button(cls):
-        """ A button that triggers a happy reaction """
-        if st.sidebar.button("Je ne suis pas satisfait"):
-            rain(
-                emoji="😞",
-                font_size=54,
-                falling_speed=3,
-                animation_length=1,
-            )
-
-    @classmethod
-    def _satisfied_button(cls):
-        """ A button that triggers a happy reaction """
-        if st.sidebar.button("Je suis satisfait"):
-            st.balloons()
+                    st.sidebar.error(f"❌ Erreur RAG Classique: {e}")
+            
+            # Bouton pour vider le store RAG Hybride
+            hybrid_info = all_stores_info.get('hybrid', {})
+            hybrid_doc_count = hybrid_info.get('document_count', 0)
+            hybrid_image_count = hybrid_info.get('image_count', 0)
+            
+            if st.sidebar.button(
+                f"🗑️ Vider RAG Hybride ({hybrid_doc_count}/{hybrid_image_count})", 
+                help="Supprime toutes les métadonnées et images du RAG hybride",
+                disabled=hybrid_doc_count == 0 and hybrid_image_count == 0
+            ):
+                try:
+                    # Créer temporairement une instance RAG hybride pour la vider
+                    hybrid_rag = RAGFactory.create_rag(RAGType.HYBRID, cls._settings, force_recreate=False)
+                    hybrid_rag.clear_vector_store()
+                    st.sidebar.success("✅ Store RAG Hybride vidé !")
+                    st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"❌ Erreur RAG Hybride: {e}")
+            
+                    
+        except Exception as e:
+            # Fallback si erreur récupération infos
+            st.sidebar.error(f"❌ Erreur récupération infos stores: {e}")
+            
+            # Bouton de secours pour vider le store actuel
+            current_rag_type = getattr(st.session_state, 'rag_type', RAGType.CLASSIC)
+            if hasattr(cls, 'rag_manager') and st.sidebar.button("🗑️ Vider store actuel"):
+                try:
+                    cls.rag_manager.clear_vector_store()
+                    st.sidebar.success("✅ Store actuel vidé !")
+                    st.rerun()
+                except Exception as clear_error:
+                    st.sidebar.error(f"❌ Erreur: {clear_error}")
 
     @classmethod
     def _css(cls) -> None:

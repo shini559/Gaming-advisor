@@ -8,35 +8,45 @@ class RAGManager:
     def __init__(self, settings):
         print("🚀 RAG: Initialisation")
         
-        # Configuration embeddings Azure
-        embeddings_deployment = os.getenv("AZURE_EMBEDDINGS_DEPLOYMENT_NAME")
-        
-        if embeddings_deployment:
+        # Configuration embeddings - utiliser celui des settings s'il existe
+        if hasattr(settings, 'rag_embedding_model') and settings.rag_embedding_model:
             try:
-                self.embeddings = AzureOpenAIEmbeddings(
-                    api_version="2024-12-01-preview",
-                    azure_endpoint="https://gameadvisorai.openai.azure.com/",
-                    api_key=os.getenv("SUBSCRIPTION_KEY"),
-                    deployment=embeddings_deployment
-                )
-                print("✅ RAG: Embeddings Azure configurés")
+                self.embeddings = settings.rag_embedding_model
+                print("✅ RAG: Utilisation du modèle d'embedding depuis settings")
             except Exception as e:
-                print(f"⚠️ RAG: Erreur embeddings: {e}")
+                print(f"⚠️ RAG: Erreur modèle embedding settings: {e}")
                 self.embeddings = None
         else:
-            print("⚠️ RAG: Pas de déploiement embeddings configuré")
-            self.embeddings = None
+            # Fallback vers configuration environnement
+            embeddings_deployment = os.getenv("AZURE_EMBEDDINGS_DEPLOYMENT_NAME")
             
-        # Configuration ChromaDB
-        persist_dir = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
+            if embeddings_deployment:
+                try:
+                    self.embeddings = AzureOpenAIEmbeddings(
+                        api_version="2024-12-01-preview",
+                        azure_endpoint="https://gameadvisorai.openai.azure.com/",
+                        api_key=os.getenv("SUBSCRIPTION_KEY"),
+                        deployment=embeddings_deployment
+                    )
+                    print("✅ RAG: Embeddings Azure configurés (fallback)")
+                except Exception as e:
+                    print(f"⚠️ RAG: Erreur embeddings: {e}")
+                    self.embeddings = None
+            else:
+                print("⚠️ RAG: Pas de déploiement embeddings configuré")
+                self.embeddings = None
+            
+        # Configuration ChromaDB avec collection spécifique au RAG classique
+        persist_dir = settings.params.get("chroma_persist_directory", "./chroma_db")
         
         if self.embeddings:
             try:
                 self.vector_store = Chroma(
+                    collection_name="classic_rag",  # Collection spécifique au RAG classique
                     persist_directory=persist_dir,
                     embedding_function=self.embeddings
                 )
-                print(f"✅ RAG: ChromaDB configuré ({persist_dir})")
+                print(f"✅ RAG: ChromaDB configuré pour RAG classique ({persist_dir}/classic_rag)")
             except Exception as e:
                 print(f"⚠️ RAG: Erreur ChromaDB: {e}")
                 self.vector_store = None
@@ -166,8 +176,24 @@ Format ta réponse en JSON:
                 )
                 
                 if similar_chunks:
-                    context = self._format_context(similar_chunks)
+                    # Logs détaillés des documents trouvés
                     print(f"✅ RAG: {len(similar_chunks)} chunks trouvés")
+                    for i, chunk in enumerate(similar_chunks, 1):
+                        metadata = chunk.metadata
+                        content_preview = chunk.page_content[:100] + "..." if len(chunk.page_content) > 100 else chunk.page_content
+                        
+                        log_info = f"📄 Document {i}:"
+                        if 'page' in metadata:
+                            log_info += f" Page {metadata['page']}"
+                        if 'chunk_type' in metadata:
+                            log_info += f" ({metadata['chunk_type']})"
+                        if 'section_title' in metadata:
+                            log_info += f" - {metadata['section_title']}"
+                        
+                        print(log_info)
+                        print(f"   💬 Contenu: {content_preview}")
+                    
+                    context = self._format_context(similar_chunks)
                     return context
                 else:
                     print("⚠️ RAG: Aucun contexte trouvé")

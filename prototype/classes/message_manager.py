@@ -81,7 +81,7 @@ class MessageManager:
     
     @staticmethod
     def _resize_image(image, settings:Settings):
-        """Resizes an image if needed"""
+        """Resizes an image so the largest side has the size of image_max_size"""
 
         image_max_size = settings.params["image_max_size"]
 

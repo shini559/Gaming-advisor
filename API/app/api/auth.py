@@ -11,15 +11,14 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """
-    Authentificatoin utilisateur
+    Authentification utilisateur
     Utilise le standard OAuth2 pour la compatibilité avec Swagger UI
 
     Args:
-        username : email de l'utilisateur
-        password : mot de passe
+        form_data: contenu du formulaire de connexion (username & password)
     """
     
-    # Authentificatoin de l'utilisateur
+    # Authentification de l'utilisateur
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(

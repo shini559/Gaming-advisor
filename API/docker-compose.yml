@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # FastAPI Application
+  gameadvisor-api:
+    build: .
+    container_name: gameadvisor-api
+    ports:
+      - "8001:8000"
+    environment:
+      # API Configuration
+      - API_TITLE=GameAdvisor API
+      - API_VERSION=1.0.0
+      - DEBUG=false
+      
+      # File Storage
+      - UPLOAD_DIR=/app/uploads
+      - MAX_FILE_SIZE=52428800  # 50MB
+    
+    volumes:
+      - ./uploads:/app/uploads
+    
+    restart: unless-stopped

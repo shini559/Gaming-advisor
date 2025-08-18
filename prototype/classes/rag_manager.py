@@ -5,9 +5,10 @@ from langchain_core.messages import HumanMessage
 
 
 class RAGManager:
-    def __init__(self, settings):
+    def __init__(self, settings, game_name=None):
         print("🚀 RAG: Initialisation")
         self.settings = settings
+        self.game_name = game_name or "default"
         
         # Configuration embeddings - utiliser celui des settings s'il existe
         if hasattr(settings, 'rag_embedding_model') and settings.rag_embedding_model:
@@ -42,12 +43,13 @@ class RAGManager:
         
         if self.embeddings:
             try:
+                collection_name = f"classic_rag_{self.game_name}"
                 self.vector_store = Chroma(
-                    collection_name="classic_rag",  # Collection spécifique au RAG classique
+                    collection_name=collection_name,
                     persist_directory=persist_dir,
                     embedding_function=self.embeddings
                 )
-                print(f"✅ RAG: ChromaDB configuré pour RAG classique ({persist_dir}/classic_rag)")
+                print(f"✅ RAG: ChromaDB configuré pour RAG classique ({persist_dir}/{collection_name})")
             except Exception as e:
                 print(f"⚠️ RAG: Erreur ChromaDB: {e}")
                 self.vector_store = None
@@ -154,11 +156,12 @@ class RAGManager:
         # Recherche vectorielle si composants disponibles
         if self.embeddings and self.vector_store:
             try:
-                # Recherche par similarité
+                # Recherche par similarité avec filtre par jeu
+                game_filter = game_context or self.game_name
                 similar_chunks = self.vector_store.similarity_search(
                     user_query, 
                     k=5,  # Top 5 résultats
-                    filter={"game": game_context} if game_context else None
+                    filter={"game": {"$eq": game_filter}}
                 )
                 
                 if similar_chunks:
@@ -261,7 +264,8 @@ class RAGManager:
                         'chunk_type': 'section',
                         'section_type': section.get('type', 'général'),
                         'section_title': section.get('title', f'Section {i+1}'),
-                        'source': 'game_rules'
+                        'source': 'game_rules',
+                        'game': self.game_name
                     }
                 })
         
@@ -277,7 +281,8 @@ class RAGManager:
                         'page': page_num,
                         'chunk_type': 'rule',
                         'rule_id': i + 1,
-                        'source': 'game_rules'
+                        'source': 'game_rules',
+                        'game': self.game_name
                     }
                 })
         
@@ -285,7 +290,7 @@ class RAGManager:
         if not chunks and 'text_content' in data:
             chunks.extend(self._chunk_by_size(data['text_content'], page_num))
         
-        return chunks if chunks else [{'text': str(page_data)[:1000], 'metadata': {'page': page_num, 'chunk_type': 'fallback', 'source': 'game_rules'}}]
+        return chunks if chunks else [{'text': str(page_data)[:1000], 'metadata': {'page': page_num, 'chunk_type': 'fallback', 'source': 'game_rules', 'game': self.game_name}}]
     
     def _chunk_by_size(self, text, page_num, max_size=500):
         """Découpe par taille avec préservation des phrases"""
@@ -303,7 +308,8 @@ class RAGManager:
                         'metadata': {
                             'page': page_num,
                             'chunk_type': 'text_segment',
-                            'source': 'game_rules'
+                            'source': 'game_rules',
+                            'game': self.game_name
                         }
                     })
                 current_chunk = sentence + ". "
@@ -314,7 +320,8 @@ class RAGManager:
                 'metadata': {
                     'page': page_num,
                     'chunk_type': 'text_segment',
-                    'source': 'game_rules'
+                    'source': 'game_rules',
+                    'game': self.game_name
                 }
             })
         

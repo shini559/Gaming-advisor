@@ -10,9 +10,10 @@ from classes.image_store_manager import ImageStoreManager
 class HybridRAGManager:
     """RAG Hybride : métadonnées en ChromaDB + images directes à l'agent"""
     
-    def __init__(self, settings):
+    def __init__(self, settings, game_name=None):
         print("🚀 RAG Hybride: Initialisation")
         self.settings = settings
+        self.game_name = game_name or "default"
         
         # Configuration embeddings - utiliser celui des settings hybride s'il existe
         if hasattr(settings, 'hybrid_embedding_model') and settings.hybrid_embedding_model:
@@ -47,20 +48,21 @@ class HybridRAGManager:
         
         if self.embeddings:
             try:
+                collection_name = f"hybrid_metadata_{self.game_name}"
                 self.vector_store = Chroma(
-                    collection_name="hybrid_metadata",  # Collection séparée
+                    collection_name=collection_name,
                     persist_directory=persist_dir,
                     embedding_function=self.embeddings
                 )
-                print(f"✅ RAG Hybride: ChromaDB configuré pour métadonnées ({persist_dir})")
+                print(f"✅ RAG Hybride: ChromaDB configuré pour métadonnées ({persist_dir}/{collection_name})")
             except Exception as e:
                 print(f"⚠️ RAG Hybride: Erreur ChromaDB: {e}")
                 self.vector_store = None
         else:
             self.vector_store = None
         
-        # Gestionnaire d'images
-        self.image_store = ImageStoreManager()
+        # Gestionnaire d'images avec nom du jeu
+        self.image_store = ImageStoreManager(game_name=self.game_name)
         
         # Modèles hybride spécifiques
         self.vision_model = settings.hybrid_vision_model
@@ -293,6 +295,7 @@ class HybridRAGManager:
                         "image_id": image_id,
                         "image_path": image_data['image_path'],
                         "source": "hybrid_rag",
+                        "game": self.game_name,
                         **{k: str(v) for k, v in metadata.items() if k not in ['image_id', 'image_path', 'stored_at']}
                     }
                     metadatas.append(chroma_metadata)
@@ -346,8 +349,9 @@ class HybridRAGManager:
                 persist_dir = self.settings.params.get("chroma_persist_directory", "./chroma_db")
                 
                 # Recréer le vector store avec les mêmes paramètres pour éviter le cache
+                collection_name = f"hybrid_metadata_{self.game_name}"
                 fresh_vector_store = Chroma(
-                    collection_name="hybrid_metadata",  # Même collection
+                    collection_name=collection_name,
                     persist_directory=persist_dir,
                     embedding_function=self.embeddings
                 )
@@ -404,7 +408,7 @@ class HybridRAGManager:
                 similar_chunks_with_scores = fresh_vector_store.similarity_search_with_score(
                     user_query,
                     k=k,  # Nombre d'images à récupérer
-                    filter={"source": "hybrid_rag"}
+                    filter={"$and": [{"source": {"$eq": "hybrid_rag"}}, {"game": {"$eq": self.game_name}}]}
                 )
                 print(f"🔍 DEBUG: similarity_search_with_score retourné {len(similar_chunks_with_scores) if similar_chunks_with_scores else 0} chunks")
                 

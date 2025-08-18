@@ -178,6 +178,10 @@ class InterfaceManager(ABC):
     def _file_uploader(cls):
         """ File uploader for images and PDFs """
         st.sidebar.markdown("### 📎 Joindre des fichiers")
+        
+        # Sélection du jeu
+        cls._game_selector()
+        
         uploaded_files = st.sidebar.file_uploader(
             "Choisir des fichiers (images, PDFs)",
             type=['png', 'jpg', 'jpeg', 'pdf'],
@@ -185,6 +189,11 @@ class InterfaceManager(ABC):
         )
 
         if uploaded_files:
+            # Vérifier qu'un jeu est sélectionné
+            if not st.session_state.current_game:
+                st.sidebar.error("⚠️ Veuillez d'abord sélectionner un jeu avant d'uploader des fichiers")
+                return uploaded_files
+                
             st.session_state.uploaded_files = uploaded_files
             st.sidebar.success(f"{len(uploaded_files)} fichier(s) ajouté(s)")
             
@@ -234,6 +243,43 @@ class InterfaceManager(ABC):
 
         return uploaded_files
 
+    @classmethod
+    def _game_selector(cls) -> None:
+        """ Sélecteur de jeu pour organiser les données """
+        st.sidebar.markdown("#### 🎲 Jeu actuel")
+        
+        # Initialiser le jeu courant s'il n'existe pas
+        if 'current_game' not in st.session_state:
+            st.session_state.current_game = ""
+        
+        # Input pour le nom du jeu
+        game_name = st.sidebar.text_input(
+            "Nom du jeu :",
+            value=st.session_state.current_game,
+            help="Nom du jeu pour organiser les règles (ex: 'Catan', 'Monopoly')",
+            placeholder="Entrer le nom du jeu..."
+        )
+        
+        # Nettoyer le nom (supprimer caractères spéciaux)
+        if game_name:
+            clean_game_name = "".join(c for c in game_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            clean_game_name = clean_game_name.replace(' ', '_').lower()
+            
+            if clean_game_name != st.session_state.current_game:
+                st.session_state.current_game = clean_game_name
+                # Forcer la recréation des RAG managers avec le nouveau jeu
+                if hasattr(cls, 'rag_manager'):
+                    # Recréer le RAG manager avec le nom du jeu
+                    current_rag_type = getattr(st.session_state, 'rag_type', RAGType.CLASSIC)
+                    cls.rag_manager = RAGFactory.create_rag(current_rag_type, cls._settings, force_recreate=True, game_name=clean_game_name)
+                st.rerun()
+        
+        # Affichage du jeu actuel
+        if st.session_state.current_game:
+            st.sidebar.info(f"🎯 Jeu sélectionné : **{st.session_state.current_game}**")
+        else:
+            st.sidebar.warning("⚠️ Veuillez sélectionner un jeu avant d'uploader des fichiers")
+
     @classmethod  
     def _rag_method_selector(cls) -> None:
         """ RAG method selector """
@@ -270,7 +316,8 @@ class InterfaceManager(ABC):
             
             # Changer de RAG via factory (forcer recréation pour éviter le cache)
             try:
-                cls.rag_manager = RAGFactory.create_rag(selected_type, cls._settings, force_recreate=True)
+                game_name = st.session_state.current_game if st.session_state.current_game else None
+                cls.rag_manager = RAGFactory.create_rag(selected_type, cls._settings, force_recreate=True, game_name=game_name)
                 st.sidebar.success(f"✅ Basculé vers RAG {selected_option}")
                 st.rerun()
             except Exception as e:

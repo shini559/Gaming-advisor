@@ -9,15 +9,19 @@ import json
 class ImageStoreManager:
     """Gestionnaire de stockage local d'images pour le RAG hybride"""
     
-    def __init__(self, storage_dir: str = "./stored_images"):
+    def __init__(self, storage_dir: str = "./stored_images", game_name: str = None):
         self.storage_dir = Path(storage_dir)
-        self.storage_dir.mkdir(exist_ok=True)
+        self.game_name = game_name or "default"
         
-        # Créer dossiers par type
-        (self.storage_dir / "game_rules").mkdir(exist_ok=True)
-        (self.storage_dir / "metadata").mkdir(exist_ok=True)
+        # Créer dossier spécifique au jeu
+        self.game_dir = self.storage_dir / self.game_name
+        self.game_dir.mkdir(parents=True, exist_ok=True)
         
-        print(f"📁 ImageStore: Dossier configuré ({self.storage_dir})")
+        # Créer dossiers par type sous le dossier du jeu
+        (self.game_dir / "game_rules").mkdir(exist_ok=True)
+        (self.game_dir / "metadata").mkdir(exist_ok=True)
+        
+        print(f"📁 ImageStore: Dossier configuré pour {self.game_name} ({self.game_dir})")
     
     def store_image(self, image_data: Dict, metadata: Dict, source_type: str = "game_rules") -> str:
         """
@@ -35,9 +39,9 @@ class ImageStoreManager:
         content_hash = hashlib.md5(image_data['data'].encode()).hexdigest()[:12]
         image_id = f"{source_type}_{content_hash}"
         
-        # Chemins de stockage
-        image_path = self.storage_dir / source_type / f"{image_id}.png"
-        metadata_path = self.storage_dir / "metadata" / f"{image_id}.json"
+        # Chemins de stockage dans le dossier du jeu
+        image_path = self.game_dir / source_type / f"{image_id}.png"
+        metadata_path = self.game_dir / "metadata" / f"{image_id}.json"
         
         try:
             # Sauvegarder image
@@ -73,9 +77,9 @@ class ImageStoreManager:
             Dict avec 'image_data' (base64), 'metadata', 'image_path'
         """
         try:
-            # Trouver l'image dans les différents dossiers
+            # Trouver l'image dans les différents dossiers du jeu
             image_path = None
-            for subdir in self.storage_dir.iterdir():
+            for subdir in self.game_dir.iterdir():
                 if subdir.is_dir() and subdir.name != "metadata":
                     potential_path = subdir / f"{image_id}.png"
                     if potential_path.exists():
@@ -87,7 +91,7 @@ class ImageStoreManager:
                 return None
             
             # Charger métadonnées
-            metadata_path = self.storage_dir / "metadata" / f"{image_id}.json"
+            metadata_path = self.game_dir / "metadata" / f"{image_id}.json"
             if not metadata_path.exists():
                 print(f"⚠️ ImageStore: Métadonnées {image_id} non trouvées")
                 return None
@@ -130,7 +134,7 @@ class ImageStoreManager:
             List des image_ids correspondants
         """
         matching_ids = []
-        metadata_dir = self.storage_dir / "metadata"
+        metadata_dir = self.game_dir / "metadata"
         
         try:
             for metadata_file in metadata_dir.glob("*.json"):
@@ -158,18 +162,18 @@ class ImageStoreManager:
         try:
             if source_type:
                 # Vider un type spécifique
-                source_dir = self.storage_dir / source_type
+                source_dir = self.game_dir / source_type
                 if source_dir.exists():
                     for file in source_dir.glob("*"):
                         file.unlink()
-                    print(f"🗑️ ImageStore: {source_type} vidé")
+                    print(f"🗑️ ImageStore: {source_type} vidé pour {self.game_name}")
             else:
-                # Vider tout
-                for subdir in self.storage_dir.iterdir():
+                # Vider tout le jeu
+                for subdir in self.game_dir.iterdir():
                     if subdir.is_dir():
                         for file in subdir.glob("*"):
                             file.unlink()
-                print("🗑️ ImageStore: Stockage complet vidé")
+                print(f"🗑️ ImageStore: Stockage vidé pour {self.game_name}")
                 
         except Exception as e:
             print(f"❌ ImageStore: Erreur vidage: {e}")
@@ -181,10 +185,11 @@ class ImageStoreManager:
             info = {
                 "total_images": 0,
                 "by_type": {},
-                "storage_path": str(self.storage_dir)
+                "storage_path": str(self.game_dir),
+                "game_name": self.game_name
             }
             
-            for subdir in self.storage_dir.iterdir():
+            for subdir in self.game_dir.iterdir():
                 if subdir.is_dir() and subdir.name != "metadata":
                     count = len(list(subdir.glob("*.png")))
                     info["by_type"][subdir.name] = count
@@ -194,4 +199,4 @@ class ImageStoreManager:
             
         except Exception as e:
             print(f"❌ ImageStore: Erreur info storage: {e}")
-            return {"total_images": 0, "by_type": {}, "storage_path": str(self.storage_dir)}
+            return {"total_images": 0, "by_type": {}, "storage_path": str(self.game_dir), "game_name": self.game_name}

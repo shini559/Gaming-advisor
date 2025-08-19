@@ -1,9 +1,7 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
 import uvicorn
-import os
 
 from app.config import settings
 from app.api.games import router as games_router
@@ -18,7 +16,7 @@ app = FastAPI(
 	redoc_url = "/redoc"
 )
 
-# Configuration CORS (pour les appels depuis le frontend
+# Configuration CORS (pour les appels depuis le frontend)
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins = ["*"], # En production, spécifier les domaines autorisés

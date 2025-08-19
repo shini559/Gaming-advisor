@@ -1,7 +1,6 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
-from typing import List, Optional
+from typing import Optional
 import uuid
-import os
 import aiofiles
 from pathlib import Path
 

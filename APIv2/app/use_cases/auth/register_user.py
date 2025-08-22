@@ -37,7 +37,7 @@ class UserAlreadyExistsError(Exception):
 
 class RegisterUser:
     """Use case for user registration"""
-    
+
     def __init__(
         self,
         user_repository: IUserRepository,
@@ -48,20 +48,20 @@ class RegisterUser:
     
     async def execute(self, request: RegisterUserRequest) -> RegisterUserResponse:
         """Execute user registration"""
-        
+
         # Validate input
         self._validate_request(request)
-        
+
         # Check if user already exists
         if await self._user_repository.exists_by_email(request.email):
             raise UserAlreadyExistsError(f"User with email '{request.email}' already exists")
-        
+
         if await self._user_repository.exists_by_username(request.username):
             raise UserAlreadyExistsError(f"User with username '{request.username}' already exists")
-        
+
         # Hash password
         hashed_password = self._password_service.hash_password(request.password)
-        
+
         # Create user entity
         user = User.create(
             username=request.username,
@@ -72,10 +72,10 @@ class RegisterUser:
             credits=100,
             avatar=request.avatar
         )
-        
+
         # Save user
         saved_user = await self._user_repository.save(user)
-        
+
         # Return response
         return RegisterUserResponse(
             user_id=str(saved_user.id),
@@ -87,7 +87,7 @@ class RegisterUser:
             credits=saved_user.credits,
             avatar=saved_user.avatar
         )
-    
+
     def _validate_request(self, request: RegisterUserRequest) -> None:
         """Validate registration request"""
         errors = []

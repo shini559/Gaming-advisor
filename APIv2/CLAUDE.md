@@ -224,3 +224,16 @@ DB_SSL_MODE=require
 - **Integration Tests**: Database operations, external services  
 - **API Tests**: FastAPI endpoint testing
 - **Migration Tests**: Database schema validation
+
+## Code Style Guidelines
+
+### Documentation et Commentaires
+- **Langue**: Tous les docstrings et commentaires doivent être rédigés en français
+- **Docstrings**: Obligatoires pour toutes les classes, méthodes et fonctions publiques
+- **Commentaires**: Explications en français pour la logique métier complexe
+- **Pas d'emojis**: Aucun emoji dans le code, commentaires ou docstrings
+
+### Collaboration avec Claude
+- **Pas d'écriture directe**: Claude ne doit jamais écrire de code directement dans les fichiers
+- **Fourniture de code**: Claude fournit le code à insérer, l'utilisateur l'insère manuellement
+- **Review avant insertion**: Validation du code proposé avant intégration

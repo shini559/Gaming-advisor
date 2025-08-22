@@ -3,6 +3,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
 
+from sqlalchemy.orm import relationship
+
 from app.adapters.database.connection import Base
 
 
@@ -19,5 +21,8 @@ class UserModel(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_subscribed = Column(Boolean, default=False, nullable=False)
     credits = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relations
+    sessions = relationship("UserSessionModel", back_populates="user", cascade="all, delete-orphan")

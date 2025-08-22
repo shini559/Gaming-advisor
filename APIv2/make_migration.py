@@ -11,7 +11,7 @@ import os
 def run_command(cmd):
     """Run command and handle errors"""
     print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
     
     if result.returncode != 0:
         print(f"Error: {result.stderr}")
@@ -40,7 +40,7 @@ def main():
         print("✅ Migration generated successfully!")
         print("Next steps:")
         print("1. Review the generated migration file in migrations/versions/")
-        print("2. Run: alembic upgrade head")
+        print("2. Run: python migrate.py")
     else:
         print("❌ Failed to generate migration")
 

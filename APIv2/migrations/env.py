@@ -4,13 +4,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
-from alembic.autogenerate import render
-import pgvector.sqlalchemy
 
 # Import your models here
-from app.adapters.database.connection import Base
-from app.adapters.database.models.user import UserModel  # Import the model so Alembic can detect it
-from config import settings
+from app.database.connection import Base
+from app.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

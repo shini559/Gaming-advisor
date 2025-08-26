@@ -16,10 +16,19 @@ alembic>=1.14.0
 # Authentication & Security
 passlib[bcrypt]>=1.7.4
 python-jose[cryptography]>=3.3.0
+types-python-jose
 python-multipart>=0.0.6
 
 # Vectorization
 pgvector
 
 bcrypt==4.0.1
+
 passlib[bcrypt]==1.7.4
+types-passlib
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+aiosqlite

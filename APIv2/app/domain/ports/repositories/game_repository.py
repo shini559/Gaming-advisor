@@ -42,3 +42,7 @@ class IGameRepository(ABC):
     @abstractmethod
     async def delete(self, game_id: UUID) -> bool:
         pass
+
+    @abstractmethod
+    async def exists_by_title_and_publisher(self, title: str, publisher: Optional[str]) -> bool:
+        pass

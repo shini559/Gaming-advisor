@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from typing import Optional
 
@@ -31,7 +31,6 @@ class User:
         avatar: Optional[str] = None
     ) -> "User":
         """Create a new user with default values"""
-        now = datetime.utcnow()
         return cls(
             id=uuid4(),
             username=username.lower().strip(),
@@ -43,8 +42,8 @@ class User:
             is_subscribed=False,
             credits=credits,
             avatar=avatar,
-            created_at=now,
-            updated_at=now
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
         )
     
     @property
@@ -55,29 +54,29 @@ class User:
     def activate(self) -> None:
         """Activate user account"""
         self.is_active = True
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def deactivate(self) -> None:
         """Deactivate user account"""
         self.is_active = False
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def subscribe(self) -> None:
         """Subscribe user"""
         self.is_subscribed = True
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def unsubscribe(self) -> None:
         """Unsubscribe user"""
         self.is_subscribed = False
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def add_credits(self, amount: int) -> None:
         """Add credits to user account"""
         if amount <= 0:
             raise ValueError("Cannot add negative credits")
         self.credits += amount
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def consume_credits(self, amount: int) -> bool:
         """Consume credits from user account. Returns True if successful."""
@@ -85,6 +84,7 @@ class User:
             raise ValueError("No credits available")
         if self.credits < amount:
             self.credits = 0
-        self.credits -= amount
-        self.updated_at = datetime.utcnow()
+        else:
+            self.credits -= amount
+        self.updated_at = datetime.now(timezone.utc)
         return True

@@ -2,7 +2,7 @@
 from .database import get_db_session
 
 # Services
-from .services import get_password_service, get_jwt_service
+from .services import get_password_service, get_jwt_service, get_blob_storage_service, get_queue_service, get_ai_processing_service
 
 # Repositories
 from .repositories import (
@@ -25,12 +25,18 @@ from .auth import (
     get_current_subscribed_user, require_credits
 )
 
+from .images import (
+      get_upload_image_use_case,
+      get_get_image_status_use_case
+  )
+
+
 
 __all__ = [
     # Database
     "get_db_session",
     # Services
-    "get_password_service", "get_jwt_service",
+    "get_password_service", "get_jwt_service", "get_blob_storage_service", "get_queue_service", "get_ai_processing_service",
     # Repositories
     "get_user_repository", "get_game_repository", "get_game_series_repository",
     "get_game_image_repository", "get_game_vector_repository", "get_user_session_repository",
@@ -42,5 +48,8 @@ __all__ = [
     "get_upload_game_image_use_case", "get_create_game_series_use_case",
     # Auth
     "get_current_user", "get_current_active_user",
-    "get_current_subscribed_user", "require_credits"
+    "get_current_subscribed_user", "require_credits",
+    # Images
+    "get_upload_image_use_case", "get_get_image_status_use_case",
+
 ]

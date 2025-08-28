@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import List
 
+from app.domain.ports.repositories.user_session_repository import IUserSessionRepository
 from app.presentation.schemas.auth import (
     UserRegistrationRequest, UserResponse, TokenResponse,
     RefreshTokenRequest, LogoutRequest, LogoutResponse, UserSessionResponse, ErrorResponse
@@ -278,7 +279,7 @@ async def logout(
 )
 async def get_user_sessions(
   current_user: User = Depends(get_current_user),
-  session_repo = Depends(get_user_session_repository)
+  session_repo: IUserSessionRepository = Depends(get_user_session_repository)
 ) -> List[UserSessionResponse]:
   """Obtenir toutes les sessions actives de l'utilisateur"""
   try:

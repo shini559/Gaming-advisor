@@ -41,13 +41,12 @@ def get_game_series_repository(
     return GameSeriesRepository(session)
 
 
-def get_game_image_repository(
-        session: AsyncSession = Depends(get_db_session)
-) -> IGameImageRepository:
+def get_game_image_repository(session: AsyncSession = Depends(get_db_session)) -> IGameImageRepository:
+    """Dépendance pour le repository des images de jeu"""
     return GameImageRepository(session)
 
 
-def get_game_vector_repository(
-        session: AsyncSession = Depends(get_db_session)
-) -> IGameVectorRepository:
+def get_game_vector_repository(session: AsyncSession = Depends(get_db_session)) -> IGameVectorRepository:
+    """Dépendance pour le repository des vecteurs de jeu"""
     return GameVectorRepository(session)
+

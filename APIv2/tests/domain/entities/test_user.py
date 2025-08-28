@@ -8,7 +8,7 @@ from app.domain.entities.user import User
 class TestUser:
   """Tests pour l'entité User"""
 
-  def test_user_create_with_valid_data(self):
+  def test_user_create_with_valid_data(self) -> None:
       """Test création utilisateur avec données valides"""
       user = User.create(
           username="testuser",
@@ -31,7 +31,7 @@ class TestUser:
       assert user.created_at is not None
       assert user.updated_at is not None
 
-  def test_user_create_strips_and_lowercases_inputs(self):
+  def test_user_create_strips_and_lowercases_inputs(self) -> None:
       """Test normalisation des entrées (strip + lowercase)"""
       user = User.create(
           username="  TestUser  ",
@@ -46,7 +46,7 @@ class TestUser:
       assert user.first_name == "Test"
       assert user.last_name == "User"
 
-  def test_user_full_name_property(self):
+  def test_user_full_name_property(self) -> None:
       """Test propriété full_name"""
       user = User.create(
           username="testuser",
@@ -58,7 +58,7 @@ class TestUser:
 
       assert user.full_name == "John Doe"
 
-  def test_user_activate_deactivate(self):
+  def test_user_activate_deactivate(self) -> None:
       """Test activation/désactivation utilisateur"""
       user = User.create(
           username="testuser",
@@ -80,7 +80,7 @@ class TestUser:
       assert user.is_active is True
       assert user.updated_at != updated_at_after_deactivate
 
-  def test_user_subscribe_unsubscribe(self):
+  def test_user_subscribe_unsubscribe(self) -> None:
       """Test souscription/désouscription"""
       user = User.create(
           username="testuser",
@@ -102,7 +102,7 @@ class TestUser:
       assert user.is_subscribed is False
       assert user.updated_at != updated_at_after_subscribe
 
-  def test_add_credits_valid_amount(self):
+  def test_add_credits_valid_amount(self) -> None:
       """Test ajout de crédits avec montant valide"""
       user = User.create(
           username="testuser",
@@ -119,7 +119,7 @@ class TestUser:
       assert user.credits == 60
       assert user.updated_at != original_updated_at
 
-  def test_add_credits_invalid_amount(self):
+  def test_add_credits_invalid_amount(self) -> None:
       """Test ajout de crédits avec montant invalide"""
       user = User.create(
           username="testuser",
@@ -135,7 +135,7 @@ class TestUser:
       with pytest.raises(ValueError, match="Cannot add negative credits"):
           user.add_credits(0)
 
-  def test_consume_credits_successful(self):
+  def test_consume_credits_successful(self) -> None:
       """Test consommation de crédits réussie"""
       user = User.create(
           username="testuser",
@@ -153,7 +153,7 @@ class TestUser:
       assert user.credits == 70
       assert user.updated_at != original_updated_at
 
-  def test_consume_credits_insufficient_balance(self):
+  def test_consume_credits_insufficient_balance(self) -> None:
       """Test consommation de crédits insuffisants"""
       user = User.create(
           username="testuser",
@@ -171,7 +171,7 @@ class TestUser:
       assert user.credits == 0
       assert user.updated_at != original_updated_at
 
-  def test_consume_credits_invalid_amount(self):
+  def test_consume_credits_invalid_amount(self) -> None:
       """Test consommation de crédits avec montant invalide"""
       user = User.create(
           username="testuser",
@@ -187,7 +187,7 @@ class TestUser:
       with pytest.raises(ValueError, match="No credits available"):
           user.consume_credits(0)
 
-  def test_user_default_values(self):
+  def test_user_default_values(self) -> None:
       """Test valeurs par défaut lors de la création"""
       user = User.create(
           username="testuser",

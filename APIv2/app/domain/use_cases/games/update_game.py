@@ -57,8 +57,8 @@ class UpdateGameUseCase:
               is_expansion=request.is_expansion if request.is_expansion is not None else game.is_expansion,
               base_game_id=request.base_game_id if request.base_game_id is not None else game.base_game_id,
               is_public=request.is_public if request.is_public is not None else game.is_public,
-              created_by=game.created_by,  # Jamais modifié
-              created_at=game.created_at,  # Jamais modifié
+              created_by=game.created_by,
+              created_at=game.created_at,
               updated_at=datetime.now(timezone.utc)
           )
 

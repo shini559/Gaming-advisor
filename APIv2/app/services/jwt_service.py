@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 from datetime import timedelta, datetime, timezone
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 from uuid import UUID
 
 from jose import jwt, JWTError
@@ -13,7 +13,7 @@ from app.domain.ports.services.jwt_service import IJWTService
 class JWTService(IJWTService):
     """Service pour la génération et validation des tokens JWT"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._secret_key = settings.jwt_secret_key
         self._algorithm = settings.jwt_algorithm
         self._access_token_expire_minutes = settings.jwt_access_token_expire_minutes

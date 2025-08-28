@@ -32,3 +32,27 @@ pytest
 pytest-asyncio
 httpx
 aiosqlite
+
+# Azure Services
+azure-storage-blob>=12.19.0      # BlobServiceClient, generate_blob_sas
+azure-identity>=1.15.0
+
+# OpenAI
+openai>=1.12.0                   # Client OpenAI avec support vision et embeddings
+
+# Image Processing
+Pillow>=10.0.0                   # Manipulation d'images, validation format/taille
+
+# Queue/Background Processing
+redis>=5.0.0                     # Client Redis pour la queue
+celery>=5.3.0                    # Task queue (optionnel, alternative à custom queue)
+# OU
+rq>=1.15.0                       # Simple Redis Queue (plus léger que Celery)
+
+# File Upload
+python-multipart>=0.0.6          # Déjà présent, pour FastAPI file uploads
+
+# Type hints
+types-redis                      # Type hints pour Redis
+
+aiohttp

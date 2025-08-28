@@ -11,7 +11,7 @@ Base = declarative_base()
 engine = None
 async_session_factory = None
 
-def create_database_engine():
+def create_database_engine() -> None:
     """Create database engine and session factory"""
     global engine, async_session_factory
     
@@ -44,7 +44,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def init_database():
+async def init_database() -> None:
     """Initialize database - create tables"""
     if not engine:
         create_database_engine()
@@ -53,7 +53,7 @@ async def init_database():
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def close_database():
+async def close_database() -> None:
     """Close database connections"""
     global engine
     if engine:

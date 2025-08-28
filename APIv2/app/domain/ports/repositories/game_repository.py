@@ -44,5 +44,5 @@ class IGameRepository(ABC):
         pass
 
     @abstractmethod
-    async def exists_by_title_and_publisher(self, title: str, publisher: Optional[str]) -> bool:
+    async def exists_by_title_publisher_and_user(self, title: str, publisher: Optional[str], created_by: Optional[UUID]) -> bool:
         pass

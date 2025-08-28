@@ -35,8 +35,8 @@ class CreateGameUseCase:
 
       self._validate_request(request)
 
-      if await self._game_repository.exists_by_title_and_publisher(request.title, request.publisher):
-          raise GameAlreadyExistsError(f"Game with title '{request.title}' and publisher '{request.publisher}' already exists")
+      if await self._game_repository.exists_by_title_publisher_and_user(request.title, request.publisher, request.created_by):
+          raise GameAlreadyExistsError(f"Game with title '{request.title}', publisher '{request.publisher}' and user ID '{request.created_by}' already exists")
 
       try:
           # Créer l'entité Game

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 
-from app.dependencies import get_create_game_use_case
+from app.dependencies import get_create_game_use_case, get_current_user
+from app.domain.entities.user import User
 from app.domain.use_cases.games import CreateGameUseCase, CreateGameRequest
 from app.domain.use_cases.games.create_game import GameAlreadyExistsError
 from app.presentation.schemas.auth import ErrorResponse

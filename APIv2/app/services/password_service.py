@@ -6,7 +6,7 @@ from app.domain.ports.services.password_service import IPasswordService
 class PasswordService(IPasswordService):
     """Service for password hashing and verification"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
     def hash_password(self, password: str) -> str:

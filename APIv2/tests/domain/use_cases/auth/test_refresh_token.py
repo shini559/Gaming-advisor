@@ -11,7 +11,7 @@ from app.domain.use_cases.auth.refresh_token import RefreshToken, RefreshTokenRe
 
 class TestRefreshTokenUseCase:
     @pytest.fixture
-    def mock_dependencies(self):
+    def mock_dependencies(self) -> dict:
         return {
             "user_repository": AsyncMock(),
             "session_repository": AsyncMock(),
@@ -19,11 +19,11 @@ class TestRefreshTokenUseCase:
         }
 
     @pytest.fixture
-    def use_case(self, mock_dependencies):
+    def use_case(self, mock_dependencies) -> RefreshToken:
         return RefreshToken(**mock_dependencies)
 
     @pytest.fixture
-    def valid_user(self):
+    def valid_user(self) -> User:
         return User(
             id=uuid4(),
             username="testuser",
@@ -39,7 +39,7 @@ class TestRefreshTokenUseCase:
         )
 
     @pytest.fixture
-    def valid_session(self):
+    def valid_session(self) -> UserSession:
         return UserSession.create(
             user_id=uuid4(),
             refresh_token_hash="valid_hash",
@@ -47,7 +47,7 @@ class TestRefreshTokenUseCase:
         )
 
     @pytest.mark.asyncio
-    async def test_successful_token_refresh(self, use_case, mock_dependencies, valid_user, valid_session):
+    async def test_successful_token_refresh(self, use_case, mock_dependencies, valid_user, valid_session) -> None:
         """Test refresh token réussi"""
         request = RefreshTokenRequest(refresh_token="valid_token")
 

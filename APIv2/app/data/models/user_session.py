@@ -26,5 +26,5 @@ class UserSessionModel(Base):
     # Relations
     user = relationship("UserModel", back_populates="sessions")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<UserSession(id={self.id}, user_id={self.user_id}, is_active={self.is_active})>"

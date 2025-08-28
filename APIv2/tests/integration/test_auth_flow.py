@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 class TestAuthenticationFlow:
     @pytest.mark.asyncio
-    async def test_complete_auth_flow(self, async_client: AsyncClient, db_session: AsyncSession, test_user_data):
+    async def test_complete_auth_flow(self, async_client: AsyncClient, db_session: AsyncSession, test_user_data) -> None:
         """Test flux complet : register → login → refresh → logout"""
 
         # 1. Register

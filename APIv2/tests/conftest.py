@@ -67,7 +67,7 @@ async def async_client(db_session):
 
 
 @pytest.fixture
-def test_user_data():
+def test_user_data() -> dict:
   """Fixture pour données utilisateur de test"""
   return {
       "username": "testuser",

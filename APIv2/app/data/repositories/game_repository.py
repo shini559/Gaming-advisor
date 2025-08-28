@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ClauseElement, ColumnElement
 
 from app.data.models import GameModel
 from app.domain.entities.game import Game
@@ -73,14 +74,19 @@ class GameRepository(IGameRepository):
         models = result.scalars().all()
         return [self._model_to_entity(model) for model in models]
 
-    async def exists_by_title_and_publisher(self, title: str, publisher: Optional[str]) -> bool:
-        """Check if game exists with given title and publisher"""
-        conditions = [GameModel.title.ilike(title)]
+    async def exists_by_title_publisher_and_user(self, title: str, publisher: Optional[str], created_by: Optional[UUID]) -> bool:
+        """Check if game exists with given title publisher and user"""
+        conditions: list[ColumnElement[bool]] = [GameModel.title.ilike(title)]
 
         if publisher:
             conditions.append(GameModel.publisher.ilike(publisher))
         else:
             conditions.append(GameModel.publisher.is_(None))
+
+        if created_by:
+            conditions.append(GameModel.created_by == created_by)
+        else:
+            conditions.append(GameModel.created_by.is_(None))
 
         stmt = select(GameModel.id).where(*conditions)
         result = await self._session.execute(stmt)

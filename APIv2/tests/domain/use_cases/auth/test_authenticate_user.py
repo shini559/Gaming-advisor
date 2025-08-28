@@ -66,7 +66,7 @@ class TestAuthenticateUser:
       )
 
   @pytest.mark.asyncio
-  async def test_successful_authentication_with_email(self, use_case, mock_dependencies, valid_request_email, test_user):
+  async def test_successful_authentication_with_email(self, use_case, mock_dependencies, valid_request_email, test_user) -> None:
       """Test authentification réussie avec email"""
       # Setup mocks
       mock_dependencies["user_repository"].find_by_email.return_value = test_user
@@ -96,7 +96,7 @@ class TestAuthenticateUser:
       mock_dependencies["session_repository"].save.assert_called_once()
 
   @pytest.mark.asyncio
-  async def test_successful_authentication_with_username(self, use_case, mock_dependencies, valid_request_username, test_user):
+  async def test_successful_authentication_with_username(self, use_case, mock_dependencies, valid_request_username, test_user) -> None:
       """Test authentification réussie avec username"""
       # Setup mocks
       mock_dependencies["user_repository"].find_by_email.return_value = None
@@ -117,7 +117,7 @@ class TestAuthenticateUser:
       mock_dependencies["user_repository"].find_by_username.assert_called_once_with("testuser")
 
   @pytest.mark.asyncio
-  async def test_authentication_user_not_found(self, use_case, mock_dependencies, valid_request_email):
+  async def test_authentication_user_not_found(self, use_case, mock_dependencies, valid_request_email) -> None:
       """Test authentification avec utilisateur non trouvé"""
       # Setup mocks
       mock_dependencies["user_repository"].find_by_email.return_value = None
@@ -129,7 +129,7 @@ class TestAuthenticateUser:
           await use_case.execute(valid_request_email)
 
   @pytest.mark.asyncio
-  async def test_authentication_user_inactive(self, use_case, mock_dependencies, valid_request_email, test_user):
+  async def test_authentication_user_inactive(self, use_case, mock_dependencies, valid_request_email, test_user) -> None:
       """Test authentification avec utilisateur inactif"""
       # Setup inactive user
       test_user.is_active = False
@@ -140,7 +140,7 @@ class TestAuthenticateUser:
           await use_case.execute(valid_request_email)
 
   @pytest.mark.asyncio
-  async def test_authentication_invalid_password(self, use_case, mock_dependencies, valid_request_email, test_user):
+  async def test_authentication_invalid_password(self, use_case, mock_dependencies, valid_request_email, test_user) -> None:
       """Test authentification avec mot de passe invalide"""
       # Setup mocks
       mock_dependencies["user_repository"].find_by_email.return_value = test_user
@@ -156,7 +156,7 @@ class TestAuthenticateUser:
       )
 
   @pytest.mark.asyncio
-  async def test_authentication_with_device_info(self, use_case, mock_dependencies, test_user):
+  async def test_authentication_with_device_info(self, use_case, mock_dependencies, test_user) -> None:
       """Test authentification avec device_info"""
       device_info = {"platform": "mobile", "version": "1.0.0"}
       request = AuthenticateUserRequest(
@@ -183,7 +183,7 @@ class TestAuthenticateUser:
       assert save_call.device_info == device_info
 
   @pytest.mark.asyncio
-  async def test_session_cleanup_failure_does_not_break_auth(self, use_case, mock_dependencies, valid_request_email, test_user):
+  async def test_session_cleanup_failure_does_not_break_auth(self, use_case, mock_dependencies, valid_request_email, test_user) -> None:
       """Test que l'échec du nettoyage des sessions n'interrompt pas l'auth"""
       # Setup mocks
       mock_dependencies["user_repository"].find_by_email.return_value = test_user
@@ -202,7 +202,7 @@ class TestAuthenticateUser:
       # Assert - auth still succeeds
       assert result.access_token == "access_token"
 
-  def test_validation_empty_username_or_email(self, use_case_for_validation):
+  def test_validation_empty_username_or_email(self, use_case_for_validation) -> None:
       """Test validation avec username/email vide"""
       request = AuthenticateUserRequest(
           username_or_email="",
@@ -212,7 +212,7 @@ class TestAuthenticateUser:
       with pytest.raises(ValueError, match="Username or email is required"):
           use_case_for_validation._validate_request(request)
 
-  def test_validation_empty_password(self, use_case_for_validation):
+  def test_validation_empty_password(self, use_case_for_validation) -> None:
       """Test validation avec password vide"""
       request = AuthenticateUserRequest(
           username_or_email="test@example.com",
@@ -222,7 +222,7 @@ class TestAuthenticateUser:
       with pytest.raises(ValueError, match="Password is required"):
           use_case_for_validation._validate_request(request)
 
-  def test_validation_multiple_errors(self, use_case_for_validation):
+  def test_validation_multiple_errors(self, use_case_for_validation) -> None:
       """Test validation avec plusieurs erreurs"""
       request = AuthenticateUserRequest(
           username_or_email="",
@@ -233,7 +233,7 @@ class TestAuthenticateUser:
           use_case_for_validation._validate_request(request)
 
   @pytest.mark.asyncio
-  async def test_find_user_prefers_email_over_username(self, use_case, mock_dependencies):
+  async def test_find_user_prefers_email_over_username(self, use_case, mock_dependencies) -> None:
       """Test que find_user privilégie l'email quand @ est présent"""
       email_user = User.create("emailuser", "test@example.com", "Email", "User", "hash1")
       username_user = User.create("test@example.com", "other@example.com", "Username", "User", "hash2")
@@ -248,7 +248,7 @@ class TestAuthenticateUser:
       mock_dependencies["user_repository"].find_by_email.assert_called_once_with("test@example.com")
 
   @pytest.mark.asyncio
-  async def test_find_user_falls_back_to_username(self, use_case, mock_dependencies):
+  async def test_find_user_falls_back_to_username(self, use_case, mock_dependencies) -> None:
       """Test fallback vers username si email échoue"""
       username_user = User.create("test@example.com", "other@example.com", "Username", "User", "hash")
 

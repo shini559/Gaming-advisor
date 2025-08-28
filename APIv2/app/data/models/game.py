@@ -29,4 +29,5 @@ class GameModel(Base):
     expansions = relationship("GameModel", back_populates="base_game")
     creator = relationship("UserModel")
     images = relationship("GameImageModel", back_populates="game")
+    image_batches = relationship("ImageBatchModel", back_populates="game")
     vectors = relationship("GameVectorModel", back_populates="game")

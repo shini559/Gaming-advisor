@@ -8,6 +8,9 @@ from app.data.repositories.game_repository import GameRepository
 from app.data.repositories.game_series_repository import GameSeriesRepository
 from app.data.repositories.game_image_repository import GameImageRepository
 from app.data.repositories.game_vector_repository import GameVectorRepository
+from app.data.repositories.chat_conversation_repository import ChatConversationRepository
+from app.data.repositories.chat_message_repository import ChatMessageRepository
+from app.data.repositories.chat_feedback_repository import ChatFeedbackRepository
 
 from app.domain.ports.repositories.user_repository import IUserRepository
 from app.domain.ports.repositories.game_repository import IGameRepository
@@ -15,6 +18,9 @@ from app.domain.ports.repositories.game_series_repository import IGameSeriesRepo
 from app.domain.ports.repositories.game_image_repository import IGameImageRepository
 from app.domain.ports.repositories.game_vector_repository import IGameVectorRepository
 from app.domain.ports.repositories.user_session_repository import IUserSessionRepository
+from app.domain.ports.repositories.chat_conversation_repository import IChatConversationRepository
+from app.domain.ports.repositories.chat_message_repository import IChatMessageRepository
+from app.domain.ports.repositories.chat_feedback_repository import IChatFeedbackRepository
 
 
 def get_user_session_repository(
@@ -49,4 +55,19 @@ def get_game_image_repository(session: AsyncSession = Depends(get_db_session)) -
 def get_game_vector_repository(session: AsyncSession = Depends(get_db_session)) -> IGameVectorRepository:
     """Dépendance pour le repository des vecteurs de jeu"""
     return GameVectorRepository(session)
+
+
+def get_chat_conversation_repository(session: AsyncSession = Depends(get_db_session)) -> IChatConversationRepository:
+    """Dépendance pour le repository des conversations de chat"""
+    return ChatConversationRepository(session)
+
+
+def get_chat_message_repository(session: AsyncSession = Depends(get_db_session)) -> IChatMessageRepository:
+    """Dépendance pour le repository des messages de chat"""
+    return ChatMessageRepository(session)
+
+
+def get_chat_feedback_repository(session: AsyncSession = Depends(get_db_session)) -> IChatFeedbackRepository:
+    """Dépendance pour le repository des feedbacks de chat"""
+    return ChatFeedbackRepository(session)
 

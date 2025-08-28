@@ -48,40 +48,65 @@ class OpenAIProcessingService(IAIProcessingService):
           processed_image = await self._prepare_image(image_data)
           image_base64 = base64.b64encode(processed_image).decode('utf-8')
 
-          # Traitement en parallèle des 3 tâches
-          ocr_task = self._extract_text(image_base64)
-          description_task = self._describe_image(image_base64)
-          labels_task = self._label_image(image_base64)
+          # === Architecture modulaire 3-paires ===
+          result = AIProcessingResult()
+          
+          # Traitement en parallèle selon configuration
+          processing_tasks = []
+          
+          if settings.enable_ocr:
+              processing_tasks.append(("ocr", self._extract_text(image_base64)))
+          if settings.enable_visual_description:
+              processing_tasks.append(("description", self._describe_image(image_base64)))
+          if settings.enable_labeling:
+              processing_tasks.append(("labels", self._label_image(image_base64)))
+          
+          # Phase 1 : Extraction du contenu
+          if processing_tasks:
+              processing_results = await asyncio.gather(*[task[1] for task in processing_tasks])
+              
+              for i, (task_type, _) in enumerate(processing_tasks):
+                  if task_type == "ocr":
+                      result.ocr_content = processing_results[i]
+                  elif task_type == "description":
+                      result.description_content = processing_results[i]  
+                  elif task_type == "labels":
+                      # Convertir labels en JSON string si nécessaire
+                      labels_data = processing_results[i]
+                      if isinstance(labels_data, str):
+                          result.labels_content = labels_data
+                      else:
+                          result.labels_content = str(labels_data)
+          
+          # Phase 2 : Vectorisation en parallèle
+          embedding_tasks = []
+          
+          if result.ocr_content:
+              embedding_tasks.append(("ocr", self._create_embedding(result.ocr_content)))
+          if result.description_content:
+              embedding_tasks.append(("description", self._create_embedding(result.description_content)))
+          if result.labels_content:
+              # Convertir JSON en texte searchable pour embedding
+              labels_text = self._labels_to_searchable_text(result.labels_content)
+              if labels_text:
+                  embedding_tasks.append(("labels", self._create_embedding(labels_text)))
+          
+          # Exécuter la vectorisation
+          if embedding_tasks:
+              embedding_results = await asyncio.gather(*[task[1] for task in embedding_tasks])
+              
+              for i, (emb_type, _) in enumerate(embedding_tasks):
+                  if emb_type == "ocr":
+                      result.ocr_embedding = embedding_results[i]
+                  elif emb_type == "description":
+                      result.description_embedding = embedding_results[i]
+                  elif emb_type == "labels":
+                      result.labels_embedding = embedding_results[i]
 
-          # Attendre tous les résultats
-          extracted_text, visual_description, labels = await asyncio.gather(
-              ocr_task, description_task, labels_task
-          )
-
-          # Vectorisation en parallèle du texte et de la description
-          text_embedding_task = self._create_embedding(extracted_text)
-          desc_embedding_task = self._create_embedding(visual_description)
-
-          text_embedding, description_embedding = await asyncio.gather(
-              text_embedding_task, desc_embedding_task
-          )
-
-          return AIProcessingResult(
-              extracted_text=extracted_text,
-              visual_description=visual_description,
-              labels=labels,
-              text_embedding=text_embedding,
-              description_embedding=description_embedding,
-              success=True
-          )
+          return result
 
       except Exception as e:
           return AIProcessingResult(
-              extracted_text="",
-              visual_description="",
-              labels=[],
-              text_embedding=[],
-              description_embedding=[],
               success=False,
               error_message=str(e)
           )
@@ -193,6 +218,39 @@ class OpenAIProcessingService(IAIProcessingService):
           print(f"Embedding Error: {e}")
           return [0.0] * settings.azure_openai_embedding_dimensions
 
+  def _labels_to_searchable_text(self, labels) -> str:
+      """Convertit les labels (list ou JSON string) en texte pour embedding"""
+      if isinstance(labels, str):
+          # Si c'est déjà du JSON, essayer de le parser
+          try:
+              import json
+              parsed = json.loads(labels)
+              # Extraire le texte searchable
+              parts = []
+              if isinstance(parsed, dict):
+                  if 'searchable_text' in parsed:
+                      parts.append(parsed['searchable_text'])
+                  if 'game_elements' in parsed:
+                      elements = parsed['game_elements']
+                      if isinstance(elements, list):
+                          parts.append(" ".join(elements))
+                  if 'key_concepts' in parsed:
+                      concepts = parsed['key_concepts']
+                      if isinstance(concepts, list):
+                          parts.append(" ".join(concepts))
+                  if 'game_actions' in parsed:
+                      actions = parsed['game_actions']
+                      if isinstance(actions, list):
+                          parts.append(" ".join(actions))
+              return " ".join(parts)
+          except:
+              # Si parsing échoue, utiliser le string tel quel
+              return labels
+      elif isinstance(labels, list):
+          # Liste simple de labels
+          return " ".join(str(label) for label in labels)
+      else:
+          return str(labels)
 
   async def test_connection(self) -> tuple[bool, str]:
       """Teste la connexion au service Azure OpenAI"""

@@ -5,6 +5,9 @@ from app.data.models.game_vector import GameVectorModel
 from app.data.models.image_batch import ImageBatchModel
 from app.data.models.user import UserModel
 from app.data.models.user_session import UserSessionModel
+from app.data.models.chat_conversation import ChatConversationModel
+from app.data.models.chat_message import ChatMessageModel
+from app.data.models.chat_feedback import ChatFeedbackModel
 
 __all__ = [
     "UserModel",
@@ -14,4 +17,7 @@ __all__ = [
     "GameImageModel",
     "GameVectorModel",
     "ImageBatchModel",
+    "ChatConversationModel",
+    "ChatMessageModel",
+    "ChatFeedbackModel",
 ]

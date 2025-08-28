@@ -20,7 +20,7 @@ def create_database_engine() -> None:
     
     engine = create_async_engine(
         settings.database_url,
-        echo=settings.debug,  # Log SQL queries in debug mode
+        echo=settings.sql_debug,  # Log SQL queries seulement si sql_debug activé
         future=True,
         pool_pre_ping=True,  # Verify connections before use
     )

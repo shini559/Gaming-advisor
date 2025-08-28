@@ -18,8 +18,21 @@ class GameVectorModel(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     game_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("games.id"), nullable=False)
     image_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("game_images.id"), nullable=False)
-    vector_embedding: Mapped[List[float]] = mapped_column(Vector(1536), nullable=False)
-    extracted_text: Mapped[str] = mapped_column(Text, nullable=True)
+    
+    # === Architecture 3-paires ===
+    # OCR (Optical Character Recognition)
+    ocr_content: Mapped[str] = mapped_column(Text, nullable=True)
+    ocr_embedding: Mapped[List[float]] = mapped_column(Vector(1536), nullable=True)
+    
+    # Description visuelle
+    description_content: Mapped[str] = mapped_column(Text, nullable=True) 
+    description_embedding: Mapped[List[float]] = mapped_column(Vector(1536), nullable=True)
+    
+    # Métadonnées/Labels (JSON)
+    labels_content: Mapped[str] = mapped_column(Text, nullable=True)  # JSON structuré
+    labels_embedding: Mapped[List[float]] = mapped_column(Vector(1536), nullable=True)
+    
+    # Métadonnées
     page_number: Mapped[int] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
 

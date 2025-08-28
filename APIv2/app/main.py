@@ -16,6 +16,7 @@ from app.domain.use_cases.images.start_processing_worker import StartProcessingW
 from app.presentation.routes.auth import router as auth_router
 from app.presentation.routes.games import router as games_router
 from app.presentation.routes.images import router as images_router
+from app.presentation.routes.chat import router as chat_router
 from app.services.blob_storage_service import AzureBlobStorageService
 from app.services.openai_processing_service import OpenAIProcessingService
 from app.services.redis_queue_service import RedisQueueService
@@ -108,6 +109,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(games_router)
 app.include_router(images_router)
+app.include_router(chat_router)
 
 
 @app.get("/")
@@ -121,9 +123,15 @@ async def root() -> dict:
             "login": "/auth/login",
             "profile": "/auth/me"
         },
-        "images": {  # ← Nouveau
+        "images": {
             "upload": "/images/games/{game_id}/upload",
             "status": "/images/{image_id}/status"
+        },
+        "chat": {
+            "create_conversation": "/chat/conversations",
+            "send_message": "/chat/messages",
+            "get_history": "/chat/conversations/{conversation_id}/history",
+            "add_feedback": "/chat/messages/{message_id}/feedback"
         }
     }
 

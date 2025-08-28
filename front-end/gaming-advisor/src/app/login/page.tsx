@@ -1,133 +1,108 @@
+// src/app/login/page.tsx
 "use client";
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
-    // State pour stocker les informations du formulaire
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+  // MODIFIÉ: On renomme la variable pour plus de clarté
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
 
-    const router = useRouter();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError('');
 
-    // Fonction pour gérer la soumission du formulaire
-    const handleSubmit = async (event: React.FormEvent) => {
-  event.preventDefault();
-  setIsLoading(true);
-  setError('');
+    // MODIFIÉ: On utilise la nouvelle variable
+    const bodyData = `grant_type=password&username=${encodeURIComponent(identifier)}&password=${encodeURIComponent(password)}&scope=&client_id=&client_secret=`;
 
-  const formData = new URLSearchParams();
-  formData.append('grant_type', 'password'); // Champ requis par la documentation
-  formData.append('username', email);
-  formData.append('password', password);
-  formData.append('scope', ''); // Champ requis par la documentation
-  formData.append('client_id', ''); // Champ requis par la documentation
-  formData.append('client_secret', ''); // Champ requis par la documentation
+    try {
+      const response = await fetch('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: bodyData,
+      });
 
-  try {
-    const response = await fetch('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/auth/login', {
-      method: 'POST',
-      headers: {
-        // NOUVEAU: Le Content-Type correct
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-
-      body: formData,
-    });
-
-        // On attend la réponse de l'API
-       const data = await response.json();
-
+      const data = await response.json();
       if (!response.ok) {
-        // Si l'API renvoie une erreur (ex: 401, 404), on la traite ici
-        // On utilise le message de l'API s'il existe, sinon un message par défaut
-        throw new Error(data.message || 'Email ou mot de passe incorrect.');
+        throw new Error(data.detail || 'Identifiant ou mot de passe incorrect.');
       }
-
-      // 1. On stocke le token d'accès dans le sessionStorage
 
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
-
-
-      console.log('Connexion réussie, redirection...');
-
-      // 2. On redirige l'utilisateur vers la page de chat
       router.push('/chat');
-      // Si tout s'est bien passé
-      console.log('Connexion réussie !', data);
 
-
-  } catch (err: any) {
-    console.error(err);
-    setError(err.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center text-gray-900">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
+        <h1 className="text-3xl font-bold text-center text-white">
           Se connecter
         </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Champ pour l'Email */}
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Adresse e-mail
-            </label>
+            <label htmlFor="login-identifier" className="block text-sm font-medium text-gray-300">Nom d'utilisateur ou E-mail</label>
             <input
-              id="email"
-              name="email"
-              type="email"
+              id="login-identifier"
+              name="login-identifier"
+              type="text"
+              autoComplete="username"
               required
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="vous@exemple.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
-          {/* Champ pour le Mot de passe */}
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Mot de passe
-            </label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300">Mot de passe</label>
             <input
               id="password"
               name="password"
               type="password"
+              autoComplete="current-password"
               required
-              className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="********"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
-             {/* NOUVEAU: Affichage du message d'erreur s'il y en a un */}
+
           {error && (
-            <p className="text-sm text-center text-gray-900">{error}</p>
+            <p className="text-sm text-center text-red-500">{error}</p>
           )}
 
-          {/* Bouton de connexion */}
           <div>
             <button
               type="submit"
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isLoading}
+              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-500/50"
             >
-              Se connecter
+              {isLoading ? 'Connexion en cours...' : 'Se connecter'}
             </button>
           </div>
         </form>
+
+        <p className="text-center text-sm text-gray-400">
+          Pas encore de compte ?{' '}
+          <Link href="/signup" className="font-medium text-indigo-400 hover:text-indigo-300">
+            Inscrivez-vous
+          </Link>
+        </p>
       </div>
     </main>
   );

@@ -77,8 +77,7 @@ class CreateGameUseCase:
       if not request.title or len(request.title.strip()) < 1:
           errors.append("Title must be at least 1 character long")
 
-      if not request.is_public:
-          errors.append("Public status is required")
+      # is_public peut être True ou False selon les besoins
 
       if errors:
           raise ValueError(f"Validation errors: {', '.join(errors)}")

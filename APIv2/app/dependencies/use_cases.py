@@ -21,6 +21,8 @@ from app.domain.use_cases.games.update_game import UpdateGameUseCase
 from app.domain.use_cases.games.delete_game import DeleteGameUseCase
 from app.domain.use_cases.games.upload_game_image import UploadGameImageUseCase
 from app.domain.use_cases.games import CreateGameSeriesUseCase
+from app.domain.use_cases.games.list_user_accessible_games import ListUserAccessibleGamesUseCase
+from app.domain.use_cases.games.list_user_games import ListUserGamesUseCase
 
 from app.domain.ports.repositories.user_repository import IUserRepository
 from app.domain.ports.repositories.game_repository import IGameRepository
@@ -105,3 +107,15 @@ def get_create_game_series_use_case(
   series_repo: IGameSeriesRepository = Depends(get_game_series_repository)
 ) -> CreateGameSeriesUseCase:
   return CreateGameSeriesUseCase(series_repo)
+
+
+def get_list_user_accessible_games_use_case(
+  game_repo: IGameRepository = Depends(get_game_repository)
+) -> ListUserAccessibleGamesUseCase:
+  return ListUserAccessibleGamesUseCase(game_repo)
+
+
+def get_list_user_games_use_case(
+  game_repo: IGameRepository = Depends(get_game_repository)
+) -> ListUserGamesUseCase:
+  return ListUserGamesUseCase(game_repo)

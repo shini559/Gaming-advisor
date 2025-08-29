@@ -5,7 +5,7 @@ from app.dependencies.repositories import (
   get_game_image_repository, get_user_session_repository,
   get_chat_conversation_repository, get_chat_message_repository, get_chat_feedback_repository
 )
-from app.dependencies.services import get_password_service, get_jwt_service, get_game_rules_agent
+from app.dependencies.services import get_password_service, get_jwt_service, get_game_rules_agent, get_conversation_history_service
 from app.domain.ports.repositories.user_session_repository import IUserSessionRepository
 from app.domain.ports.services.jwt_service import IJWTService
 from app.domain.ports.services.password_service import IPasswordService
@@ -28,6 +28,7 @@ from app.domain.use_cases.chat.create_conversation import CreateConversationUseC
 from app.domain.use_cases.chat.send_message import SendMessageUseCase
 from app.domain.use_cases.chat.get_conversation_history import GetConversationHistoryUseCase
 from app.domain.use_cases.chat.add_message_feedback import AddMessageFeedbackUseCase
+from app.domain.use_cases.chat.list_conversations_by_game import ListConversationsByGameUseCase
 
 from app.domain.ports.repositories.user_repository import IUserRepository
 from app.domain.ports.repositories.game_repository import IGameRepository
@@ -37,6 +38,7 @@ from app.domain.ports.repositories.chat_conversation_repository import IChatConv
 from app.domain.ports.repositories.chat_message_repository import IChatMessageRepository
 from app.domain.ports.repositories.chat_feedback_repository import IChatFeedbackRepository
 from app.domain.ports.services.game_rules_agent import IGameRulesAgent
+from app.domain.ports.services.conversation_history_service import IConversationHistoryService
 
 
 # Auth Use Cases
@@ -150,10 +152,11 @@ def get_send_message_use_case(
 
 def get_conversation_history_use_case(
   conversation_repo: IChatConversationRepository = Depends(get_chat_conversation_repository),
-  message_repo: IChatMessageRepository = Depends(get_chat_message_repository)
+  message_repo: IChatMessageRepository = Depends(get_chat_message_repository),
+  conversation_history_service: IConversationHistoryService = Depends(get_conversation_history_service)
 ) -> GetConversationHistoryUseCase:
   """Factory pour GetConversationHistoryUseCase"""
-  return GetConversationHistoryUseCase(conversation_repo, message_repo)
+  return GetConversationHistoryUseCase(conversation_repo, message_repo, conversation_history_service)
 
 
 def get_add_message_feedback_use_case(
@@ -163,3 +166,10 @@ def get_add_message_feedback_use_case(
 ) -> AddMessageFeedbackUseCase:
   """Factory pour AddMessageFeedbackUseCase"""
   return AddMessageFeedbackUseCase(message_repo, conversation_repo, feedback_repo)
+
+
+def get_list_conversations_by_game_use_case(
+  conversation_repo: IChatConversationRepository = Depends(get_chat_conversation_repository)
+) -> ListConversationsByGameUseCase:
+  """Factory pour ListConversationsByGameUseCase"""
+  return ListConversationsByGameUseCase(conversation_repo)

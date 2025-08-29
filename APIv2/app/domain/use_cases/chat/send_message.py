@@ -155,7 +155,8 @@ class SendMessageUseCase:
         agent_message = ChatMessage.create_assistant_message(
             conversation_id=conversation.id,
             content=agent_response.content,
-            sources=agent_response.sources
+            sources=agent_response.sources,
+            search_method=agent_response.search_method
         )
         
         # 4. Sauvegarder le message assistant

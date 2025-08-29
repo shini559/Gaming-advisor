@@ -7,13 +7,15 @@ from app.dependencies.use_cases import (
     get_create_conversation_use_case,
     get_send_message_use_case,
     get_conversation_history_use_case,
-    get_add_message_feedback_use_case
+    get_add_message_feedback_use_case,
+    get_list_conversations_by_game_use_case
 )
 from app.domain.entities.user import User
 from app.domain.use_cases.chat.create_conversation import CreateConversationUseCase, CreateConversationRequest as UseCaseCreateRequest
 from app.domain.use_cases.chat.send_message import SendMessageUseCase, SendMessageRequest as UseCaseSendRequest
 from app.domain.use_cases.chat.get_conversation_history import GetConversationHistoryUseCase, GetConversationHistoryRequest as UseCaseHistoryRequest
 from app.domain.use_cases.chat.add_message_feedback import AddMessageFeedbackUseCase, AddMessageFeedbackRequest as UseCaseFeedbackRequest
+from app.domain.use_cases.chat.list_conversations_by_game import ListConversationsByGameUseCase, ListConversationsByGameRequest as UseCaseListRequest
 from app.presentation.schemas.chat import (
     CreateConversationRequest,
     CreateConversationResponse,
@@ -26,7 +28,8 @@ from app.presentation.schemas.chat import (
     ChatMessageSchema,
     ChatConversationSchema,
     ChatFeedbackSchema,
-    MessageSourceSchema
+    MessageSourceSchema,
+    ConversationListResponse
 )
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
@@ -53,6 +56,8 @@ def _convert_message_to_schema(message) -> ChatMessageSchema:
         role=message.role,
         content=message.content,
         sources=sources,
+        search_method=message.search_method,
+        is_useful=message.is_useful,
         created_at=message.created_at
     )
 
@@ -74,11 +79,9 @@ def _convert_feedback_to_schema(feedback) -> ChatFeedbackSchema:
     return ChatFeedbackSchema(
         id=feedback.id,
         message_id=feedback.message_id,
-        user_id=feedback.user_id,
         feedback_type=feedback.feedback_type,
         comment=feedback.comment,
-        created_at=feedback.created_at,
-        updated_at=feedback.updated_at
+        created_at=feedback.created_at
     )
 
 
@@ -204,6 +207,41 @@ async def add_message_feedback(
         )
     else:
         return AddFeedbackResponse(
+            success=False,
+            error_message=result.error_message
+        )
+
+
+@router.get("/games/{game_id}/conversations", response_model=ConversationListResponse)
+async def list_conversations_by_game(
+    game_id: UUID,
+    limit: int = 20,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    use_case: ListConversationsByGameUseCase = Depends(get_list_conversations_by_game_use_case)
+) -> ConversationListResponse:
+    """Récupérer les conversations de l'utilisateur actuel pour un jeu spécifique"""
+    
+    use_case_request = UseCaseListRequest(
+        user_id=current_user.id,
+        game_id=game_id,
+        limit=limit,
+        offset=offset
+    )
+    
+    result = await use_case.execute(use_case_request)
+    
+    if result.success:
+        conversations_schema = [_convert_conversation_to_schema(conv) for conv in result.conversations]
+        
+        return ConversationListResponse(
+            success=True,
+            conversations=conversations_schema,
+            total_conversations=result.total_conversations,
+            has_more=result.has_more
+        )
+    else:
+        return ConversationListResponse(
             success=False,
             error_message=result.error_message
         )

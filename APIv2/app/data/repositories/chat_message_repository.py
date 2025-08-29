@@ -37,6 +37,7 @@ class ChatMessageRepository(IChatMessageRepository):
             role=message.role,
             content=message.content,
             sources=sources_json,
+            search_method=message.search_method,
             created_at=message.created_at
         )
         
@@ -176,5 +177,6 @@ class ChatMessageRepository(IChatMessageRepository):
             role=model.role,
             content=model.content,
             sources=sources,
-            created_at=model.created_at
+            created_at=model.created_at,
+            search_method=model.search_method
         )

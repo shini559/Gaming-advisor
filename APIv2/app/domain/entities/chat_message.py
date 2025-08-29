@@ -49,6 +49,8 @@ class ChatMessage:
     content: str
     sources: List[MessageSource]
     created_at: datetime
+    search_method: Optional[str] = None  # Méthode de recherche utilisée (ocr, description, labels, hybrid)
+    is_useful: Optional[bool] = None  # Feedback utilisateur (None=pas de feedback, True=positif, False=négatif)
     
     @classmethod
     def create_user_message(
@@ -73,6 +75,7 @@ class ChatMessage:
         conversation_id: UUID,
         content: str,
         sources: List[MessageSource],
+        search_method: Optional[str] = None,
         message_id: Optional[UUID] = None
     ) -> 'ChatMessage':
         """Factory method pour créer un message de l'assistant"""
@@ -82,7 +85,8 @@ class ChatMessage:
             role=MessageRole.ASSISTANT,
             content=content,
             sources=sources,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
+            search_method=search_method
         )
     
     def is_from_user(self) -> bool:

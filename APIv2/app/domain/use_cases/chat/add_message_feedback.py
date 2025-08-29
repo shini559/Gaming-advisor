@@ -104,7 +104,6 @@ class AddMessageFeedbackUseCase:
                 # Création d'un nouveau feedback
                 feedback = ChatFeedback.create(
                     message_id=request.message_id,
-                    user_id=request.user_id,
                     feedback_type=request.feedback_type,
                     comment=request.comment
                 )

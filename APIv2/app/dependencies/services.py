@@ -11,10 +11,12 @@ from app.services.redis_queue_service import RedisQueueService
 from app.services.openai_processing_service import OpenAIProcessingService
 from app.services.vector_search_service import VectorSearchService
 from app.services.game_rules_agent import GameRulesAgent
-from app.dependencies.repositories import get_game_vector_repository, get_chat_message_repository, get_game_image_repository
+from app.services.conversation_history_service import ConversationHistoryService
+from app.dependencies.repositories import get_game_vector_repository, get_chat_message_repository, get_game_image_repository, get_chat_feedback_repository
 from app.domain.ports.repositories.game_vector_repository import IGameVectorRepository
 from app.domain.ports.repositories.chat_message_repository import IChatMessageRepository
 from app.domain.ports.repositories.game_image_repository import IGameImageRepository
+from app.domain.ports.repositories.chat_feedback_repository import IChatFeedbackRepository
 
 def get_password_service() -> IPasswordService:
   """Factory for PasswordService"""
@@ -77,3 +79,11 @@ def get_game_rules_agent(
     if _game_rules_agent is None:
         _game_rules_agent = GameRulesAgent(vector_search_service, message_repository, image_repository)
     return _game_rules_agent
+
+
+def get_conversation_history_service(
+    message_repository: IChatMessageRepository = Depends(get_chat_message_repository),
+    feedback_repository: IChatFeedbackRepository = Depends(get_chat_feedback_repository)
+) -> ConversationHistoryService:
+    """Dépendance pour le service d'historique de conversation avec feedback"""
+    return ConversationHistoryService(message_repository, feedback_repository)

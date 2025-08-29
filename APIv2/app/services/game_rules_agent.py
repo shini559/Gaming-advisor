@@ -64,6 +64,7 @@ class GameRulesAgent(IGameRulesAgent):
                 content=response_content,
                 sources=sources,
                 confidence=confidence,
+                search_method=settings.search_method,
                 reasoning=f"Réponse générée avec {len(sources)} source(s)"
             )
             
@@ -77,6 +78,7 @@ class GameRulesAgent(IGameRulesAgent):
                 content="Je rencontre un problème technique. Peux-tu reformuler ta question ?",
                 sources=[],
                 confidence=0.0,
+                search_method=settings.search_method,
                 reasoning=f"Erreur: {str(e)}"
             )
     

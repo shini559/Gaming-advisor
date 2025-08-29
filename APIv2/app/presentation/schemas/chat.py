@@ -25,6 +25,8 @@ class ChatMessageSchema(BaseModel):
     role: MessageRole
     content: str
     sources: Optional[List[MessageSourceSchema]] = None
+    search_method: Optional[str] = None  # Méthode de recherche utilisée pour générer la réponse
+    is_useful: Optional[bool] = None  # Feedback utilisateur (None=pas de feedback, True=positif, False=négatif)
     created_at: datetime
 
     class Config:
@@ -45,11 +47,9 @@ class ChatFeedbackSchema(BaseModel):
     """Schema de base pour un feedback de message"""
     id: UUID
     message_id: UUID
-    user_id: UUID
     feedback_type: FeedbackType
     comment: Optional[str] = None
     created_at: datetime
-    updated_at: datetime
 
     class Config:
         use_enum_values = True

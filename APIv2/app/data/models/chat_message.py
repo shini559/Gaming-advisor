@@ -18,6 +18,7 @@ class ChatMessageModel(Base):
     role: Mapped[MessageRole] = mapped_column(SQLEnum(MessageRole), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     sources: Mapped[dict] = mapped_column(JSONB, nullable=False, default=lambda: [])  # Stocké comme JSON
+    search_method: Mapped[str | None] = mapped_column(String(20), nullable=True)  # Méthode de recherche utilisée
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     
     # Relations

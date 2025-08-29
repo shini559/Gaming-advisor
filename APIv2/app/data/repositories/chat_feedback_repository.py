@@ -22,11 +22,9 @@ class ChatFeedbackRepository(IChatFeedbackRepository):
         model = ChatFeedbackModel(
             id=feedback.id,
             message_id=feedback.message_id,
-            user_id=feedback.user_id,
-            feedback_type=feedback.feedback_type,
+            is_helpful=(feedback.feedback_type == FeedbackType.POSITIVE),
             comment=feedback.comment,
-            created_at=feedback.created_at,
-            updated_at=feedback.updated_at
+            created_at=feedback.created_at
         )
         
         self._session.add(model)
@@ -52,16 +50,8 @@ class ChatFeedbackRepository(IChatFeedbackRepository):
         return self._model_to_entity(model) if model else None
     
     async def get_by_message_and_user(self, message_id: UUID, user_id: UUID) -> Optional[ChatFeedback]:
-        """Récupérer le feedback d'un message pour un utilisateur spécifique"""
-        stmt = select(ChatFeedbackModel).where(
-            and_(
-                ChatFeedbackModel.message_id == message_id,
-                ChatFeedbackModel.user_id == user_id
-            )
-        )
-        result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
-        return self._model_to_entity(model) if model else None
+        """Récupérer le feedback d'un message (user_id ignoré car un seul feedback par message)"""
+        return await self.get_by_message_id(message_id)
     
     async def get_by_conversation_id(self, conversation_id: UUID) -> List[ChatFeedback]:
         """Récupérer tous les feedbacks d'une conversation"""
@@ -87,9 +77,8 @@ class ChatFeedbackRepository(IChatFeedbackRepository):
         model = result.scalar_one_or_none()
         
         if model:
-            model.feedback_type = feedback.feedback_type
+            model.is_helpful = (feedback.feedback_type == FeedbackType.POSITIVE)
             model.comment = feedback.comment
-            model.updated_at = feedback.updated_at
             await self._session.flush()
             return self._model_to_entity(model)
         
@@ -127,7 +116,7 @@ class ChatFeedbackRepository(IChatFeedbackRepository):
         ).where(
             and_(
                 ChatMessageModel.conversation_id == conversation_id,
-                ChatFeedbackModel.feedback_type == FeedbackType.POSITIVE
+                ChatFeedbackModel.is_helpful == True
             )
         )
         
@@ -144,7 +133,7 @@ class ChatFeedbackRepository(IChatFeedbackRepository):
         ).where(
             and_(
                 ChatMessageModel.conversation_id == conversation_id,
-                ChatFeedbackModel.feedback_type == FeedbackType.NEGATIVE
+                ChatFeedbackModel.is_helpful == False
             )
         )
         
@@ -153,12 +142,11 @@ class ChatFeedbackRepository(IChatFeedbackRepository):
     
     def _model_to_entity(self, model: ChatFeedbackModel) -> ChatFeedback:
         """Convertit un modèle en entité"""
+        feedback_type = FeedbackType.POSITIVE if model.is_helpful else FeedbackType.NEGATIVE
         return ChatFeedback(
             id=model.id,
             message_id=model.message_id,
-            user_id=model.user_id,
-            feedback_type=model.feedback_type,
+            feedback_type=feedback_type,
             comment=model.comment,
-            created_at=model.created_at,
-            updated_at=model.updated_at
+            created_at=model.created_at
         )

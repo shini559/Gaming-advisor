@@ -1,4 +1,3 @@
-import asyncio
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -141,25 +140,6 @@ async def health_check() -> dict:
     return {"status": "healthy"}
 
 
-@app.post(
-      "/test-delay",
-      status_code=status.HTTP_200_OK,
-      summary="Endpoint fictif avec délai",
-      description="Endpoint temporaire qui attend 3 secondes et renvoie un message"
-)
-async def test_delay_endpoint(message: str) -> dict:
-  """Endpoint fictif pour test avec délai de 3 secondes"""
-  # Attendre 3 secondes
-  await asyncio.sleep(3)
-
-  # Renvoyer une réponse fictive
-  return {
-      "status": "success",
-      "received_message": message,
-      "response": f"Votre message '{message}' a été traité après 3 secondes d'attente",
-      "timestamp": "2025-08-26T12:10:00Z",
-      "processing_time_seconds": 3
-  }
 
 
 

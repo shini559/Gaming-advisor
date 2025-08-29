@@ -5,6 +5,7 @@ from uuid import UUID
 from app.domain.entities.chat_message import ChatMessage
 from app.domain.ports.repositories.chat_conversation_repository import IChatConversationRepository
 from app.domain.ports.repositories.chat_message_repository import IChatMessageRepository
+from app.domain.ports.services.conversation_history_service import IConversationHistoryService
 
 
 @dataclass
@@ -66,10 +67,12 @@ class GetConversationHistoryUseCase:
     def __init__(
         self,
         conversation_repository: IChatConversationRepository,
-        message_repository: IChatMessageRepository
+        message_repository: IChatMessageRepository,
+        conversation_history_service: IConversationHistoryService
     ):
         self.conversation_repository = conversation_repository
         self.message_repository = message_repository
+        self.conversation_history_service = conversation_history_service
     
     async def execute(self, request: GetConversationHistoryRequest) -> GetConversationHistoryResponse:
         """Exécute la récupération d'historique"""
@@ -90,10 +93,10 @@ class GetConversationHistoryUseCase:
                 request.conversation_id
             )
             
-            # 3. Récupérer les messages avec pagination
-            messages = await self.message_repository.get_conversation_history(
+            # 3. Récupérer les messages avec feedback et pagination
+            messages = await self.conversation_history_service.get_conversation_history_with_feedback(
                 conversation_id=request.conversation_id,
-                limit_messages=request.limit,
+                limit=request.limit,
                 offset=request.offset
             )
             

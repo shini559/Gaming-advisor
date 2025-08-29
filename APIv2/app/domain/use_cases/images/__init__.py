@@ -1,7 +1,7 @@
-from .upload_image import UploadImageUseCase, UploadImageRequest, UploadImageResponse
-from .get_image_status import GetImageStatusUseCase, GetImageStatusRequest, GetImageStatusResponse
+from .create_image_batch import CreateImageBatchUseCase, CreateImageBatchRequest, CreateImageBatchResult
+from .get_batch_status import GetBatchStatusUseCase, GetBatchStatusResult
 
 __all__ = [
-  "UploadImageUseCase", "UploadImageRequest", "UploadImageResponse",
-  "GetImageStatusUseCase", "GetImageStatusRequest", "GetImageStatusResponse"
+  "CreateImageBatchUseCase", "CreateImageBatchRequest", "CreateImageBatchResult",
+  "GetBatchStatusUseCase", "GetBatchStatusResult"
 ]

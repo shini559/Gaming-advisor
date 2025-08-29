@@ -32,6 +32,7 @@ class AgentResponse:
     content: str
     sources: List[MessageSource]
     confidence: float  # Score de confiance entre 0 et 1
+    search_method: Optional[str] = None  # Méthode de recherche utilisée
     reasoning: Optional[str] = None  # Explication du raisonnement (pour debug)
     
     def is_confident(self, threshold: float = 0.7) -> bool:

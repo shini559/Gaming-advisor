@@ -18,6 +18,7 @@ class CreateImageBatchRequest:
     game_id: UUID
     user_id: UUID
     image_files: List[tuple[str, BinaryIO, int]]  # (filename, content, size)
+    user_is_admin: bool = False  # Privilèges admin pour upload
 
 
 @dataclass
@@ -56,6 +57,13 @@ class CreateImageBatchUseCase:
                 return CreateImageBatchResult(
                     success=False,
                     error_message=f"Jeu {request.game_id} non trouvé"
+                )
+            
+            # 2. SÉCURITÉ: Vérifier que l'utilisateur peut uploader sur ce jeu
+            if not self._can_user_upload_to_game(game, request.user_id, request.user_is_admin):
+                return CreateImageBatchResult(
+                    success=False,
+                    error_message="Accès refusé : vous ne pouvez uploader que sur vos propres jeux ou les jeux publics (admin)"
                 )
 
             if not request.image_files:
@@ -151,3 +159,16 @@ class CreateImageBatchUseCase:
                 success=False,
                 error_message=f"Erreur lors de la création du batch : {str(e)}"
             )
+    
+    def _can_user_upload_to_game(self, game, user_id: UUID, user_is_admin: bool) -> bool:
+        """Vérifie si l'utilisateur peut uploader des images pour ce jeu"""
+        # 1. Propriétaire du jeu : toujours autorisé
+        if game.created_by == user_id:
+            return True
+        
+        # 2. Admin sur jeu public : autorisé
+        if user_is_admin and game.is_public:
+            return True
+            
+        # 3. Autres cas : refusé
+        return False

@@ -41,9 +41,11 @@ def get_create_image_batch_use_case(
 def get_get_batch_status_use_case(
     batch_repository: IImageBatchRepository = Depends(get_image_batch_repository),
     image_repository: IGameImageRepository = Depends(get_game_image_repository),
+    game_repository: IGameRepository = Depends(get_game_repository)
 ) -> GetBatchStatusUseCase:
     """Dependency injection pour GetBatchStatusUseCase"""
     return GetBatchStatusUseCase(
         batch_repository=batch_repository,
-        image_repository=image_repository
+        image_repository=image_repository,
+        game_repository=game_repository
     )

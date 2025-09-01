@@ -14,8 +14,9 @@ class CreateGameRequest:
   series_id: Optional[UUID] = None
   is_expansion: bool = False
   base_game_id: Optional[UUID] = None
-  is_public: bool = False
+  is_public: Optional[bool] = None  # None = auto-détecté selon role user
   created_by: Optional[UUID] = None
+  user_is_admin: bool = False  # Nouveau: pour vérifier les privilèges
 
 @dataclass
 class CreateGameResponse:
@@ -39,6 +40,9 @@ class CreateGameUseCase:
           raise GameAlreadyExistsError(f"Game with title '{request.title}', publisher '{request.publisher}' and user ID '{request.created_by}' already exists")
 
       try:
+          # Déterminer is_public et created_by selon les privilèges admin
+          is_public, created_by = self._determine_game_ownership(request)
+          
           # Créer l'entité Game
           game = Game(
               id=uuid4(),
@@ -48,8 +52,8 @@ class CreateGameUseCase:
               series_id=request.series_id,
               is_expansion=request.is_expansion,
               base_game_id=request.base_game_id,
-              is_public=request.is_public,
-              created_by=request.created_by,
+              is_public=is_public,
+              created_by=created_by,
               created_at=datetime.now(timezone.utc),
               updated_at=datetime.now(timezone.utc)
           )
@@ -70,14 +74,33 @@ class CreateGameUseCase:
               message=f"Failed to create game: {str(e)}"
           )
 
+  def _determine_game_ownership(self, request: CreateGameRequest) -> tuple[bool, Optional[UUID]]:
+      """Détermine is_public et created_by selon les privilèges admin"""
+      
+      # Si l'utilisateur est admin
+      if request.user_is_admin:
+          # L'admin peut choisir explicitement is_public
+          if request.is_public is True:
+              # Jeu public : appartient à la plateforme (created_by = None)
+              return True, None
+          else:
+              # Admin crée un jeu privé : lié à son ID
+              return False, request.created_by
+      else:
+          # Utilisateur normal : toujours privé et lié à son ID
+          # (La validation is_public=True est faite dans _validate_request)
+          return False, request.created_by
+
   def _validate_request(self, request: CreateGameRequest) -> None:
       """Validate creation request"""
       errors = []
 
       if not request.title or len(request.title.strip()) < 1:
           errors.append("Title must be at least 1 character long")
-
-      # is_public peut être True ou False selon les besoins
+      
+      # Validation des privilèges admin pour jeux publics
+      if request.is_public is True and not request.user_is_admin:
+          errors.append("Seuls les administrateurs peuvent créer des jeux publics")
 
       if errors:
           raise ValueError(f"Validation errors: {', '.join(errors)}")

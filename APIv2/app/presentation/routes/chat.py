@@ -108,9 +108,9 @@ async def create_conversation(
             conversation=conversation_schema
         )
     else:
-        return CreateConversationResponse(
-            success=False,
-            error_message=result.error_message
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error_message
         )
 
 
@@ -140,9 +140,9 @@ async def send_message(
             assistant_message=assistant_message_schema
         )
     else:
-        return SendMessageResponse(
-            success=False,
-            error_message=result.error_message
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error_message
         )
 
 
@@ -175,9 +175,9 @@ async def get_conversation_history(
             has_more=result.has_more
         )
     else:
-        return GetConversationHistoryResponse(
-            success=False,
-            error_message=result.error_message
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error_message
         )
 
 
@@ -206,9 +206,9 @@ async def add_message_feedback(
             feedback=feedback_schema
         )
     else:
-        return AddFeedbackResponse(
-            success=False,
-            error_message=result.error_message
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error_message
         )
 
 
@@ -241,7 +241,7 @@ async def list_conversations_by_game(
             has_more=result.has_more
         )
     else:
-        return ConversationListResponse(
-            success=False,
-            error_message=result.error_message
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error_message
         )

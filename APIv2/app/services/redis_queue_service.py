@@ -1,6 +1,6 @@
 import json
 import ssl
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 from uuid import UUID
 
@@ -54,7 +54,7 @@ class RedisQueueService(IQueueService):
       redis_client = await self._get_redis()
 
       # Générer un job_id unique
-      job_id = f"job_{image_id}_{datetime.utcnow().timestamp()}"
+      job_id = f"job_{image_id}_{datetime.now(timezone.utc).timestamp()}"
 
       # Sérialiser la tâche
       job_data = {
@@ -67,7 +67,7 @@ class RedisQueueService(IQueueService):
           "retry_count": 0,
           "max_retries": settings.queue_retry_attempts,
           "metadata": {},
-          "created_at": datetime.utcnow().isoformat(),
+          "created_at": datetime.now(timezone.utc).isoformat(),
       }
 
       # Stocker les données de la tâche

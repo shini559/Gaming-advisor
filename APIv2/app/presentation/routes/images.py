@@ -57,7 +57,8 @@ async def upload_game_images_batch(
         request = CreateImageBatchRequest(
             game_id=game_id,
             user_id=current_user.id,
-            image_files=image_files
+            image_files=image_files,
+            user_is_admin=current_user.is_admin
         )
 
         response = await use_case.execute(request)
@@ -111,7 +112,7 @@ async def get_batch_processing_status(
 ) -> BatchStatusResponse:
     """Récupère le statut détaillé de traitement d'un batch"""
 
-    response = await use_case.execute(batch_id)
+    response = await use_case.execute(batch_id, current_user.id, current_user.is_admin)
 
     if not response.success:
         if "not found" in response.error_message.lower():

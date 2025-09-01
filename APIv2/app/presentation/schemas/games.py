@@ -12,7 +12,8 @@ class GameCreationRequest(BaseModel):
     series_id: UUID | None = Field(None, description="Game series ID (optional)")
     is_expansion: bool = Field(False, description="Is expansion ? (optional)")
     base_game_id: UUID | None = Field(None, description="Game base ID (optional)")
-    # is_public et created_by sont gérés côté serveur pour la sécurité
+    is_public: bool | None = Field(None, description="Is game public? (admin only)")
+    # created_by est géré côté serveur pour la sécurité
 
     model_config = ConfigDict(
         json_schema_extra = {

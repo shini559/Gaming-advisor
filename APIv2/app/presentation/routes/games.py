@@ -30,10 +30,10 @@ async def create_game(
   current_user: User = Depends(get_current_user),
   use_case: CreateGameUseCase = Depends(get_create_game_use_case)
 ) -> GameResponse:
-  """Inscrire un nouvel utilisateur"""
+  """Créer un nouveau jeu"""
   try:
       # Convertir le schéma API en requête use case
-      # Sécurité: is_public=False et created_by=current_user.id forcés
+      # Logique admin vs utilisateur normal
       use_case_request = CreateGameRequest(
           title=request.title,
           publisher=request.publisher,
@@ -41,8 +41,9 @@ async def create_game(
           series_id=request.series_id,
           is_expansion=request.is_expansion,
           base_game_id=request.base_game_id,
-          is_public=False,
-          created_by=current_user.id
+          is_public=request.is_public,  # Peut être None, True (admin only), ou False
+          created_by=current_user.id,
+          user_is_admin=current_user.is_admin  # Nouveau: privilèges admin
       )
 
       # Exécuter le use case

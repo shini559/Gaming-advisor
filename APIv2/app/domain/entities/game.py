@@ -5,6 +5,8 @@ from uuid import UUID
 
 @dataclass
 class Game:
+    """A game"""
+
     id: UUID
     title: str
     description: str | None

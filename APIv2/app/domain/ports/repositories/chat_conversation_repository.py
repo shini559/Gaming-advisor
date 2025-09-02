@@ -6,49 +6,49 @@ from app.domain.entities.chat_conversation import ChatConversation
 
 
 class IChatConversationRepository(ABC):
-    """Interface pour le repository des conversations de chat"""
+    """Interface for chat conversations repository"""
     
     @abstractmethod
     async def create(self, conversation: ChatConversation) -> ChatConversation:
-        """Créer une nouvelle conversation"""
+        """Creates a new conversation"""
         pass
     
     @abstractmethod
     async def get_by_id(self, conversation_id: UUID) -> Optional[ChatConversation]:
-        """Récupérer une conversation par son ID"""
+        """Gets a conversation by its ID"""
         pass
     
     @abstractmethod
     async def get_by_user_id(self, user_id: UUID, limit: int = 50, offset: int = 0) -> List[ChatConversation]:
-        """Récupérer les conversations d'un utilisateur avec pagination"""
+        """Gets a user's conversations by his ID (paginated))"""
         pass
     
     @abstractmethod
     async def get_by_game_and_user(self, game_id: UUID, user_id: UUID, limit: int = 50, offset: int = 0) -> List[ChatConversation]:
-        """Récupérer les conversations d'un utilisateur pour un jeu spécifique"""
+        """Gets a user's conversations for a specific game by their ID (paginated)"""
         pass
     
     @abstractmethod
     async def count_by_user_id(self, user_id: UUID) -> int:
-        """Compter les conversations d'un utilisateur"""
+        """Count a user's conversations by his ID"""
         pass
     
     @abstractmethod
     async def count_by_game_and_user(self, game_id: UUID, user_id: UUID) -> int:
-        """Compter les conversations d'un utilisateur pour un jeu spécifique"""
+        """Count a user's conversations for a specific game by their IDs"""
         pass
     
     @abstractmethod
     async def update(self, conversation: ChatConversation) -> ChatConversation:
-        """Mettre à jour une conversation"""
+        """Updates a conversation title"""
         pass
     
     @abstractmethod
     async def delete(self, conversation_id: UUID) -> bool:
-        """Supprimer une conversation et tous ses messages"""
+        """Deletes a conversation by its ID"""
         pass
     
     @abstractmethod
     async def exists_for_user(self, conversation_id: UUID, user_id: UUID) -> bool:
-        """Vérifier si une conversation appartient à un utilisateur"""
+        """Checks if a conversation is associated with a specific user by their IDs"""
         pass

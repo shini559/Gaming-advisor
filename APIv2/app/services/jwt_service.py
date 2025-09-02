@@ -11,7 +11,7 @@ from app.domain.ports.services.jwt_service import IJWTService
 
 
 class JWTService(IJWTService):
-    """Service pour la génération et validation des tokens JWT"""
+    """JWT token generation & validation service"""
 
     def __init__(self) -> None:
         self._secret_key = settings.jwt_secret_key
@@ -20,31 +20,31 @@ class JWTService(IJWTService):
         self._refresh_token_expire_days = settings.jwt_refresh_token_expire_days
 
     def create_token_pair(self, user_id: UUID, username: str, email: str) -> Tuple[str, str, str, int, int]:
-        """Créer une paire access token + refresh token"""
-        # Créer l'access token
-        access_token = self.create_access_token(user_id, username, email)
+        """Creates an access token + refresh token pair"""
 
-        # Créer le refresh token
+        access_token = self._create_access_token(user_id, username, email)
+
         refresh_token = self._generate_refresh_token()
         refresh_token_hash = self.hash_refresh_token(refresh_token)
 
-        # Calculer les durées d'expiration
-        access_expires_in = self._access_token_expire_minutes * 60  # en secondes
-        refresh_expires_in = self._refresh_token_expire_days * 24 * 60 * 60  # en secondes
+        # Calculate expiration (in seconds)
+        access_expires_in = self._access_token_expire_minutes * 60
+        refresh_expires_in = self._refresh_token_expire_days * 86400
 
         return access_token, refresh_token, refresh_token_hash, access_expires_in, refresh_expires_in
 
-    def create_access_token(self, user_id: UUID, username: str, email: str) -> str:
-        """Créer un JWT access token pour l'utilisateur"""
+    def _create_access_token(self, user_id: UUID, username: str, email: str) -> str:
+        """Creates an access token"""
+
         expires_delta = timedelta(minutes=self._access_token_expire_minutes)
         expire = datetime.now(timezone.utc) + expires_delta
 
         to_encode = {
-            "sub": str(user_id),  # Subject (user ID)
+            "sub": str(user_id),  # Subject
             "username": username,
             "email": email,
             "exp": expire,
-            "iat": datetime.now(timezone.utc),
+            "iat": datetime.now(timezone.utc), # Issued at
             "type": "access_token"
         }
 
@@ -52,11 +52,12 @@ class JWTService(IJWTService):
         return encoded_jwt
 
     def verify_access_token(self, token: str) -> Optional[Dict[str, Any]]:
-        """Vérifier et décoder un JWT token d'accès"""
+        """Verifies and decodes an access JWT token"""
+
         try:
             payload = jwt.decode(token, self._secret_key, algorithms=[self._algorithm])
 
-            # Vérifier si le token est expiré
+            # Check if the token expired
             exp = payload.get("exp")
             if exp is None:
                 return None
@@ -64,7 +65,7 @@ class JWTService(IJWTService):
             if datetime.now(timezone.utc) > datetime.fromtimestamp(exp, tz=timezone.utc):
                 return None
 
-            # Vérifier le type de token
+            # Check the token type
             if payload.get("type") != "access_token":
                 return None
 
@@ -74,7 +75,8 @@ class JWTService(IJWTService):
             return None
 
     def get_user_id_from_token(self, token: str) -> Optional[UUID]:
-        """Extraire l'ID utilisateur du token"""
+        """Extracts user ID from token"""
+
         payload = self.verify_access_token(token)
         if payload is None:
             return None

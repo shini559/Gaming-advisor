@@ -16,7 +16,7 @@ from .use_cases import (
     get_refresh_token_use_case, get_logout_user_use_case,
     get_create_game_use_case, get_get_game_use_case, get_list_games_use_case,
     get_update_game_use_case, get_delete_game_use_case,
-    get_upload_game_image_use_case, get_create_game_series_use_case
+    get_create_game_series_use_case
 )
 
 # Auth
@@ -39,7 +39,7 @@ __all__ = [
     "get_refresh_token_use_case", "get_logout_user_use_case",
     "get_create_game_use_case", "get_get_game_use_case", "get_list_games_use_case",
     "get_update_game_use_case", "get_delete_game_use_case",
-    "get_upload_game_image_use_case", "get_create_game_series_use_case",
+    "get_create_game_series_use_case",
     # Auth
     "get_current_user", "get_current_active_user",
     "get_current_subscribed_user", "require_credits",

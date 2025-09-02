@@ -6,6 +6,8 @@ from typing import Optional
 
 @dataclass
 class User:
+    """A user"""
+
     id: UUID
     username: str
     email: str
@@ -15,7 +17,7 @@ class User:
     is_active: bool = True
     is_subscribed: bool = False
     is_admin: bool = False
-    credits: int = 0
+    token_credits: int = 0
     avatar: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -28,11 +30,11 @@ class User:
         first_name: str,
         last_name: str,
         hashed_password: str,
-        credits: int = 0,
+        token_credits: int = 0,
         avatar: Optional[str] = None,
         is_admin: bool = False
     ) -> "User":
-        """Create a new user with default values"""
+        """Factory method to create a new user"""
         return cls(
             id=uuid4(),
             username=username.lower().strip(),
@@ -43,7 +45,7 @@ class User:
             is_active=True,
             is_subscribed=False,
             is_admin=is_admin,
-            credits=credits,
+            token_credits=token_credits,
             avatar=avatar,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc)
@@ -54,44 +56,12 @@ class User:
         """Get user's full name"""
         return f"{self.first_name} {self.last_name}"
     
-    def can_create_public_games(self) -> bool:
-        """Vérifier si l'utilisateur peut créer des jeux publics"""
-        return self.is_admin and self.is_active
-    
     def activate(self) -> None:
-        """Activate user account"""
+        """Activates user account"""
         self.is_active = True
         self.updated_at = datetime.now(timezone.utc)
-    
+
     def deactivate(self) -> None:
-        """Deactivate user account"""
+        """Deactivates user account"""
         self.is_active = False
         self.updated_at = datetime.now(timezone.utc)
-    
-    def subscribe(self) -> None:
-        """Subscribe user"""
-        self.is_subscribed = True
-        self.updated_at = datetime.now(timezone.utc)
-    
-    def unsubscribe(self) -> None:
-        """Unsubscribe user"""
-        self.is_subscribed = False
-        self.updated_at = datetime.now(timezone.utc)
-    
-    def add_credits(self, amount: int) -> None:
-        """Add credits to user account"""
-        if amount <= 0:
-            raise ValueError("Cannot add negative credits")
-        self.credits += amount
-        self.updated_at = datetime.now(timezone.utc)
-    
-    def consume_credits(self, amount: int) -> bool:
-        """Consume credits from user account. Returns True if successful."""
-        if amount <= 0:
-            raise ValueError("No credits available")
-        if self.credits < amount:
-            self.credits = 0
-        else:
-            self.credits -= amount
-        self.updated_at = datetime.now(timezone.utc)
-        return True

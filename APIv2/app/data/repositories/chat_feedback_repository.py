@@ -1,9 +1,8 @@
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, delete, func, and_
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.data.models.chat_feedback import ChatFeedbackModel
 from app.data.models.chat_message import ChatMessageModel

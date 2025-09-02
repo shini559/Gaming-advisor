@@ -1,55 +1,48 @@
 from enum import Enum
 
 
-class VectorSearchType(Enum):
-    """Types de recherche vectorielle disponibles"""
+class VectorSearchMethod(Enum):
+    """Available search methods"""
+
     OCR = "ocr"
     DESCRIPTION = "description"
     LABELS = "labels"
-    HYBRID = "hybrid"  # Combine plusieurs types selon un algorithme
+    HYBRID = "hybrid"  # COmbines multiple types, not implemented yet
     
-    def get_embedding_column(self) -> str:
-        """Retourne le nom de la colonne d'embedding correspondante"""
-        if self == VectorSearchType.OCR:
-            return "ocr_embedding"
-        elif self == VectorSearchType.DESCRIPTION:
-            return "description_embedding"
-        elif self == VectorSearchType.LABELS:
-            return "labels_embedding"
+    def get_search_method_column(self) -> tuple[str, str]:
+        """Returns the corresponding embedding and content column names"""
+
+        if self == VectorSearchMethod.OCR:
+            return "ocr_embedding", "ocr_content"
+        elif self == VectorSearchMethod.DESCRIPTION:
+            return "description_embedding", "description_content"
+        elif self == VectorSearchMethod.LABELS:
+            return "labels_embedding", "labels_content"
         else:
-            raise ValueError(f"Type de recherche non supporté pour colonne unique: {self}")
-    
-    def get_content_column(self) -> str:
-        """Retourne le nom de la colonne de contenu correspondante"""
-        if self == VectorSearchType.OCR:
-            return "ocr_content"
-        elif self == VectorSearchType.DESCRIPTION:
-            return "description_content"
-        elif self == VectorSearchType.LABELS:
-            return "labels_content"
-        else:
-            raise ValueError(f"Type de recherche non supporté pour colonne unique: {self}")
+            raise ValueError(f"Search method unsupported: {self}")
     
     def get_not_null_condition(self) -> str:
-        """Retourne la condition SQL pour vérifier que les données existent"""
-        if self == VectorSearchType.OCR:
+        """Returns SQL condition to check if data exists"""
+
+        if self == VectorSearchMethod.OCR:
             return "AND ocr_content IS NOT NULL AND ocr_embedding IS NOT NULL"
-        elif self == VectorSearchType.DESCRIPTION:
+        elif self == VectorSearchMethod.DESCRIPTION:
             return "AND description_content IS NOT NULL AND description_embedding IS NOT NULL"
-        elif self == VectorSearchType.LABELS:
+        elif self == VectorSearchMethod.LABELS:
             return "AND labels_content IS NOT NULL AND labels_embedding IS NOT NULL"
         else:
             return ""
 
 
 class ProcessingType(Enum):
-    """Types de traitement IA disponibles"""
+    """Available AI treatments"""
+
     OCR = "ocr"
     VISUAL_DESCRIPTION = "description"
     METADATA_LABELS = "labels"
     
     def get_config_flag(self) -> str:
-        """Retourne le nom du flag de configuration correspondant"""
+        """Returns the corresponding config flag (found in config.py). Used to activate/deactivate AI treatments on upload"""
         if self == ProcessingType.OCR:
             return "enable_ocr"
         elif self == ProcessingType.VISUAL_DESCRIPTION:

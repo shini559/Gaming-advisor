@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 
 
 class ImageProcessingStatus(Enum):
+    """Available processing status for an image"""
+
     UPLOADED = "uploaded"  # Fichier uploadé, en attente
     PROCESSING = "processing"  # En cours de traitement IA
     COMPLETED = "completed"  # Traitement terminé avec succès
@@ -15,6 +17,8 @@ class ImageProcessingStatus(Enum):
 
 @dataclass
 class GameImage:
+    """An image for game rules"""
+
     id: UUID
     game_id: UUID
     file_path: str
@@ -41,7 +45,8 @@ class GameImage:
         uploaded_by: UUID,
         batch_id: Optional[UUID] = None
     ) -> 'GameImage':
-        """Créer une nouvelle image de jeu"""
+        """Creates a new game image"""
+
         return cls(
             id=uuid4(),
             game_id=game_id,

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from typing import List, BinaryIO
 from uuid import UUID
+import logging
 
 from app.config import settings
 from app.domain.entities.image_batch import ImageBatch
-from app.domain.entities.game_image import GameImage, ImageProcessingStatus
+from app.domain.entities.game_image import GameImage
 from app.domain.ports.repositories.image_batch_repository import IImageBatchRepository
 from app.domain.ports.repositories.game_image_repository import IGameImageRepository
 from app.domain.ports.repositories.game_repository import IGameRepository
@@ -81,6 +82,14 @@ class CreateImageBatchUseCase:
             
             saved_batch = await self.batch_repository.create(batch)
 
+            # Log de debug : informations sur les fichiers reçus
+            if settings.debug:
+                file_info = [(f, s) for f, _, s in request.image_files]
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Batch {batch.id} - Game: {request.game_id}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Nombre de fichiers reçus: {len(request.image_files)}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Détails fichiers: {file_info}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] User: {request.user_id}, Admin: {request.user_is_admin}")
+
             # 3. Uploader les images en parallèle et créer les entités GameImage
             uploaded_images = []
             job_ids = []
@@ -118,6 +127,10 @@ class CreateImageBatchUseCase:
 
                 except Exception as e:
                     # Si une image échoue, on continue avec les autres
+                    if settings.debug:
+                        logging.error(f"[BATCH_UPLOAD_DEBUG] Échec upload image '{filename}' (taille: {size} bytes)")
+                        logging.error(f"[BATCH_UPLOAD_DEBUG] Erreur: {str(e)}")
+                        logging.error(f"[BATCH_UPLOAD_DEBUG] Type d'erreur: {type(e).__name__}")
                     batch.total_images -= 1
                     continue
 
@@ -137,8 +150,23 @@ class CreateImageBatchUseCase:
                     continue
 
             # 5. Mettre à jour le batch avec le nombre final d'images
+            total_initial = len(request.image_files)
+            total_failed = total_initial - batch.total_images
+            
+            # Log de debug : résumé final
+            if settings.debug:
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Résumé final - Batch {batch.id}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Images initiales: {total_initial}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Images uploadées: {len(uploaded_images)}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Images échouées: {total_failed}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Jobs Redis créés: {len(job_ids)}")
+                logging.info(f"[BATCH_UPLOAD_DEBUG] Total images final dans batch: {batch.total_images}")
+
             if batch.total_images > 0:
                 await self.batch_repository.update(batch)
+
+                if settings.debug:
+                    logging.info(f"[BATCH_UPLOAD_DEBUG] Batch {batch.id} - SUCCÈS")
 
                 return CreateImageBatchResult(
                     success=True,
@@ -148,6 +176,9 @@ class CreateImageBatchUseCase:
                 )
             else:
                 # Aucune image n'a pu être uploadée
+                if settings.debug:
+                    logging.error(f"[BATCH_UPLOAD_DEBUG] Batch {batch.id} - ÉCHEC TOTAL - Suppression du batch")
+                    
                 await self.batch_repository.delete(batch.id)
                 return CreateImageBatchResult(
                     success=False,

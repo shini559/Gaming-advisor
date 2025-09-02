@@ -35,7 +35,7 @@ class UserResponse(BaseModel):
     first_name: str = Field(..., description="First name")
     last_name: str = Field(..., description="Last name")
     is_active: bool = Field(..., description="Whether the user account is active")
-    credits: int = Field(..., description="User credits balance")
+    token_credits: int = Field(..., description="User credits balance")
     avatar: Optional[str] = Field(None, description="User avatar URL or base64 string")
 
     model_config = ConfigDict(
@@ -47,7 +47,7 @@ class UserResponse(BaseModel):
                 "first_name": "John",
                 "last_name": "Doe",
                 "is_active": True,
-                "credits": 100,
+                "token_credits": 100,
                 "avatar": "https://example.com/avatar.jpg"
             }
         }

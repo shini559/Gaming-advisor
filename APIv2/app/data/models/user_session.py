@@ -11,7 +11,8 @@ from app.data.connection import Base
 
 
 class UserSessionModel(Base):
-    """Modèle SQLAlchemy pour les sessions utilisateur"""
+    """SQLAlchemy model for user sessions"""
+
     __tablename__ = "user_sessions"
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)

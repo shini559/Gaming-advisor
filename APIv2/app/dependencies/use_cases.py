@@ -2,7 +2,7 @@ from fastapi import Depends
 
 from app.dependencies.repositories import (
   get_user_repository, get_game_repository, get_game_series_repository,
-  get_game_image_repository, get_user_session_repository,
+  get_user_session_repository,
   get_chat_conversation_repository, get_chat_message_repository, get_chat_feedback_repository
 )
 from app.dependencies.services import get_password_service, get_jwt_service, get_game_rules_agent, get_conversation_history_service
@@ -20,7 +20,6 @@ from app.domain.use_cases.games.get_game import GetGameUseCase
 from app.domain.use_cases.games import ListGamesUseCase
 from app.domain.use_cases.games.update_game import UpdateGameUseCase
 from app.domain.use_cases.games.delete_game import DeleteGameUseCase
-from app.domain.use_cases.games.upload_game_image import UploadGameImageUseCase
 from app.domain.use_cases.games import CreateGameSeriesUseCase
 from app.domain.use_cases.games.list_user_accessible_games import ListUserAccessibleGamesUseCase
 from app.domain.use_cases.games.list_user_games import ListUserGamesUseCase
@@ -33,7 +32,6 @@ from app.domain.use_cases.chat.list_conversations_by_game import ListConversatio
 from app.domain.ports.repositories.user_repository import IUserRepository
 from app.domain.ports.repositories.game_repository import IGameRepository
 from app.domain.ports.repositories.game_series_repository import IGameSeriesRepository
-from app.domain.ports.repositories.game_image_repository import IGameImageRepository
 from app.domain.ports.repositories.chat_conversation_repository import IChatConversationRepository
 from app.domain.ports.repositories.chat_message_repository import IChatMessageRepository
 from app.domain.ports.repositories.chat_feedback_repository import IChatFeedbackRepository
@@ -105,13 +103,6 @@ def get_delete_game_use_case(
   game_repo: IGameRepository = Depends(get_game_repository)
 ) -> DeleteGameUseCase:
   return DeleteGameUseCase(game_repo)
-
-
-def get_upload_game_image_use_case(
-  image_repo: IGameImageRepository = Depends(get_game_image_repository),
-  game_repo: IGameRepository = Depends(get_game_repository)
-) -> UploadGameImageUseCase:
-  return UploadGameImageUseCase(image_repo, game_repo)
 
 
 def get_create_game_series_use_case(

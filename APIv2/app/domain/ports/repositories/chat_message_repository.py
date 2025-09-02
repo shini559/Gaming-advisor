@@ -34,7 +34,7 @@ class IChatMessageRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_conversation_history(self, conversation_id: UUID, limit_messages: int = 20) -> List[ChatMessage]:
+    async def get_conversation_history(self, conversation_id: UUID, limit_messages: int = 20, offset: int = 0) -> List[ChatMessage]:
         """Récupérer les derniers messages d'une conversation pour le contexte IA"""
         pass
     

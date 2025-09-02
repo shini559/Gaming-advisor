@@ -56,3 +56,4 @@ python-multipart>=0.0.6          # Déjà présent, pour FastAPI file uploads
 types-redis                      # Type hints pour Redis
 
 aiohttp
+starlette

@@ -1,12 +1,9 @@
-import asyncio
-from functools import partial
-from io import BytesIO
 from typing import BinaryIO, Optional
 from uuid import UUID
 
 from azure.storage.blob.aio import BlobServiceClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.config import settings
 from app.domain.ports.services.blob_storage_service import IBlobStorageService
@@ -69,6 +66,20 @@ class AzureBlobStorageService(IBlobStorageService):
 
       return file_path, blob_url
 
+  async def download_image(self, file_path: str) -> bytes:
+      """Télécharge le contenu d'une image depuis Azure Blob Storage"""
+      try:
+          container_client = self.client.get_container_client(
+              settings.azure_blob_container_name
+          )
+          blob_client = container_client.get_blob_client(file_path)
+
+          download_stream = await blob_client.download_blob()
+          return await download_stream.readall()
+
+      except Exception as e:
+          raise ValueError(f"Failed to download image from {file_path}: {str(e)}")
+
   async def delete_image(self, file_path: str) -> bool:
       """Supprime une image d'Azure Blob Storage"""
       try:
@@ -93,7 +104,7 @@ class AzureBlobStorageService(IBlobStorageService):
               blob_name=file_path,
               account_key=settings.azure_storage_key,
               permission=BlobSasPermissions(read=True),
-              expiry=datetime.utcnow() + timedelta(hours=expires_in_hours)
+              expiry=datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
           )
 
           return f"{settings.azure_blob_url}/{settings.azure_blob_container_name}/{file_path}?{sas_token}"

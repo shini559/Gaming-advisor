@@ -33,7 +33,7 @@ class UserRepository(IUserRepository):
             existing_user.is_active = user.is_active
             existing_user.is_subscribed = user.is_subscribed
             existing_user.is_admin = user.is_admin
-            existing_user.credits = user.credits
+            existing_user.token_credits = user.token_credits
             existing_user.updated_at = user.updated_at
             user_model = existing_user
         else:
@@ -49,7 +49,7 @@ class UserRepository(IUserRepository):
                 is_active=user.is_active,
                 is_subscribed=user.is_subscribed,
                 is_admin=user.is_admin,
-                credits=user.credits,
+                token_credits=user.token_credits,
                 created_at=user.created_at,
                 updated_at=user.updated_at
             )
@@ -121,7 +121,7 @@ class UserRepository(IUserRepository):
             is_active=user_model.is_active,
             is_subscribed=user_model.is_subscribed,
             is_admin=user_model.is_admin,
-            credits=user_model.credits,
+            token_credits=user_model.token_credits,
             created_at=user_model.created_at,
             updated_at=user_model.updated_at
         )

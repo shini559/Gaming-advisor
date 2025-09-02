@@ -9,7 +9,7 @@ from app.domain.entities.image_batch import BatchStatus
 
 
 class ImageBatchModel(Base):
-    """Modèle SQLAlchemy pour les batches d'images"""
+    """SQLAlchemy model for image batches"""
     
     __tablename__ = "image_batches"
 

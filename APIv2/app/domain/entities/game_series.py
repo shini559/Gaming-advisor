@@ -5,6 +5,8 @@ from uuid import UUID
 
 @dataclass
 class GameSeries:
+    """A series of games"""
+
     id: UUID
     title: str
     publisher: str | None

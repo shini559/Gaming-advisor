@@ -195,18 +195,8 @@ class ImageProcessingWorker:
     async def _download_image(self, blob_path: str) -> BytesIO:
         """Télécharge une image depuis Azure Blob Storage"""
         try:
-            from app.config import settings
-
-            # Obtenir le container client
-            container_client = self.blob_service.client.get_container_client(
-                settings.azure_blob_container_name
-            )
-            blob_client = container_client.get_blob_client(blob_path)
-
-            # Télécharger le contenu
-            download_stream = await blob_client.download_blob()
-            content = await download_stream.readall()
-
+            # Utiliser la méthode de l'interface
+            content = await self.blob_service.download_image(blob_path)
             return BytesIO(content)
 
         except Exception as e:

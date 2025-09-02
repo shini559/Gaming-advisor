@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     # API Configuration
     api_title: str = "GameAdvisor API"
     api_version: str = "0.0.1"
-    debug: bool = False
-    sql_debug: bool = False  # Logs SQL spécifiques (séparé du debug général)
+    debug: bool = True
+    sql_debug: bool = True
     
     # Server Configuration
     host: str = "0.0.0.0"
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     db_ssl_mode: str = "require"
     
     # JWT Configuration
-    jwt_secret_key: str = "CHANGE-ME-IN-PRODUCTION-USE-STRONG-256-BIT-KEY"
+    jwt_secret_key: str = "DEVELOPMENT-KEY"
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 240
     jwt_refresh_token_expire_days: int = 7
@@ -56,9 +56,14 @@ class Settings(BaseSettings):
 
     # Queue Configuration
     redis_url: str = "redis://localhost:6379/0"
+    redis_host: Optional[str] = None
+    redis_port: int = 6379
+    redis_password: Optional[str] = None
+    redis_ssl: bool = False
     queue_retry_attempts: int = 3
     queue_retry_delay_seconds: int = 30
     queue_processing_timeout_seconds: int = 300
+    redis_ttl: int = 24 # Time before deleting job data (in hours)
 
     # Batch Processing Configuration
     batch_max_retries: int = 3

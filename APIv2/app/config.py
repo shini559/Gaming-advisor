@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     db_ssl_mode: str = "require"
     
     # JWT Configuration
-    jwt_secret_key: str = "DEVELOPMENT-KEY"
+    jwt_secret_key: str = "CHANGE-ME-IN-PRODUCTION-USE-STRONG-256-BIT-KEY"
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 240
     jwt_refresh_token_expire_days: int = 7
@@ -71,8 +71,8 @@ class Settings(BaseSettings):
     
     # AI Processing Methods (toggles)
     enable_ocr: bool = True                 # Activer extraction OCR
-    enable_visual_description: bool = False  # Activer description visuelle
-    enable_labeling: bool = False           # Activer métadonnées JSON
+    enable_visual_description: bool = True  # Activer description visuelle
+    enable_labeling: bool = True           # Activer métadonnées JSON
 
     # AI search methods
     vector_search_method: str = "description"  # "ocr" | "description" | "labels"  /  Used for similarity search

@@ -6,6 +6,7 @@ import pytest
 
 from app.domain.entities.user import User
 from app.domain.entities.user_session import UserSession
+from app.domain.ports.services.jwt_service import IJWTService
 from app.domain.use_cases.auth.refresh_token import RefreshToken, RefreshTokenRequest, InvalidRefreshTokenError, ExpiredRefreshTokenError
 
 
@@ -33,7 +34,7 @@ class TestRefreshTokenUseCase:
             hashed_password="hash",
             is_active=True,
             is_subscribed=False,
-            credits=100,
+            token_credits=100,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc)
         )
@@ -47,7 +48,7 @@ class TestRefreshTokenUseCase:
         )
 
     @pytest.mark.asyncio
-    async def test_successful_token_refresh(self, use_case, mock_dependencies, valid_user, valid_session) -> None:
+    async def test_successful_token_refresh(self, use_case, mock_dependencies: dict, valid_user, valid_session) -> None:
         """Test refresh token réussi"""
         request = RefreshTokenRequest(refresh_token="valid_token")
 

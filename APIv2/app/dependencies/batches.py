@@ -2,8 +2,6 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.data.repositories.image_batch_repository import ImageBatchRepository
-from app.data.repositories.game_image_repository import GameImageRepository
-from app.data.repositories.game_repository import GameRepository
 from app.dependencies import get_game_image_repository, get_game_repository
 from app.dependencies.database import get_db_session
 from app.dependencies.services import get_blob_storage_service, get_queue_service

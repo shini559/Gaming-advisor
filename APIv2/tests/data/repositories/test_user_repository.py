@@ -24,7 +24,7 @@ class TestUserRepository:
           first_name="Test",
           last_name="User",
           hashed_password="hashed_password_123",
-          credits=100
+          token_credits=100
       )
 
   @pytest.fixture
@@ -36,7 +36,7 @@ class TestUserRepository:
           first_name="Another",
           last_name="User",
           hashed_password="hashed_password_456",
-          credits=50
+          token_credits=50
       )
 
   @pytest.mark.asyncio
@@ -54,7 +54,7 @@ class TestUserRepository:
       assert saved_user.hashed_password == "hashed_password_123"
       assert saved_user.is_active is True
       assert saved_user.is_subscribed is False
-      assert saved_user.credits == 100
+      assert saved_user.token_credits == 100
       assert saved_user.created_at is not None
       assert saved_user.updated_at is not None
 
@@ -102,7 +102,7 @@ class TestUserRepository:
 
       # Modify user
       saved_user.first_name = "Modified"
-      saved_user.credits = 200
+      saved_user.token_credits = 200
       saved_user.is_subscribed = True
       saved_user.updated_at = datetime.now(timezone.utc)
 
@@ -112,7 +112,7 @@ class TestUserRepository:
       # Assert
       assert updated_user.id == saved_user.id
       assert updated_user.first_name == "Modified"
-      assert updated_user.credits == 200
+      assert updated_user.token_credits == 200
       assert updated_user.is_subscribed is True
       # Verify it's the same user (not a new one)
       found_user = await repository.find_by_id(saved_user.id)
@@ -330,7 +330,7 @@ class TestUserRepository:
       assert saved_user.hashed_password == test_user.hashed_password
       assert saved_user.is_active == test_user.is_active
       assert saved_user.is_subscribed == test_user.is_subscribed
-      assert saved_user.credits == test_user.credits
+      assert saved_user.token_credits == test_user.token_credits
       # Dates should be preserved (within reasonable tolerance)
       assert abs((saved_user.created_at - test_user.created_at).total_seconds()) < 1
       assert abs((saved_user.updated_at - test_user.updated_at).total_seconds()) < 1

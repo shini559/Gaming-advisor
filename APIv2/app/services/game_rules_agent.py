@@ -8,6 +8,7 @@ from app.config import settings
 from app.domain.entities.chat_message import MessageSource
 from app.domain.ports.repositories.chat_message_repository import IChatMessageRepository
 from app.domain.ports.repositories.game_image_repository import IGameImageRepository
+from app.domain.ports.services.conversation_history_service import IConversationHistoryService
 from app.domain.ports.services.game_rules_agent import (
     IGameRulesAgent,
     AgentRequest,
@@ -29,11 +30,13 @@ class GameRulesAgent(IGameRulesAgent):
         self,
         vector_search_service: IVectorSearchService,
         message_repository: IChatMessageRepository,
-        image_repository: IGameImageRepository
+        image_repository: IGameImageRepository,
+        conversation_history_service: IConversationHistoryService
     ):
         self.vector_search = vector_search_service
         self.message_repository = message_repository
         self.image_repository = image_repository
+        self.conversation_history_service = conversation_history_service
         
         # Client Azure OpenAI pour la génération de réponses
         self._chat_client = AsyncAzureOpenAI(
@@ -95,7 +98,7 @@ class GameRulesAgent(IGameRulesAgent):
         if request.include_conversation_history:
             logger.info("📜 Récupération historique conversation...")
             try:
-                messages = await self.message_repository.get_conversation_history(
+                messages = await self.conversation_history_service.get_conversation_history_for_agent(
                     request.conversation_id,
                     limit_messages=settings.agent_max_conversation_history
                 )

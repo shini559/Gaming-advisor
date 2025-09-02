@@ -18,6 +18,11 @@ class IJWTService(ABC):
         pass
 
     @abstractmethod
+    def _create_access_token(self, user_id: UUID, username: str, email: str) -> str:
+        """Creates an access token"""
+        pass
+
+    @abstractmethod
     def get_refresh_token_expiry(self) -> datetime:
         """Obtient la date d'expiration pour un refresh token"""
         pass

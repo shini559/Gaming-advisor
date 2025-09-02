@@ -24,6 +24,11 @@ class IBlobStorageService(ABC):
       pass
 
   @abstractmethod
+  async def download_image(self, file_path: str) -> bytes:
+      """Télécharge le contenu d'une image depuis le stockage"""
+      pass
+
+  @abstractmethod
   async def delete_image(self, file_path: str) -> bool:
       """Supprime une image d'Azure Blob Storage"""
       pass
@@ -31,4 +36,9 @@ class IBlobStorageService(ABC):
   @abstractmethod
   async def get_image_url(self, file_path: str, expires_in_hours: int = 24) -> Optional[str]:
       """Génère une URL signée temporaire pour accéder à l'image"""
+      pass
+
+  @abstractmethod
+  async def close(self):
+      """Ferme proprement la connexion Azure"""
       pass

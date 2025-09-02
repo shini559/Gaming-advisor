@@ -9,6 +9,8 @@ from app.data.connection import Base
 
 
 class GameSeriesModel(Base):
+    """SQLAlchemy model for game series"""
+
     __tablename__ = 'game_series'
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)

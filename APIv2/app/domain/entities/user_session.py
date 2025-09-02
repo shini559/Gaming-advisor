@@ -6,7 +6,8 @@ from uuid import UUID, uuid4
 
 @dataclass
 class UserSession:
-    """Entité métier représentant une session utilisateur"""
+    """User session"""
+
     id: UUID
     user_id: UUID
     refresh_token_hash: str
@@ -24,7 +25,8 @@ class UserSession:
         expires_at: datetime,
         device_info: Optional[Dict[str, Any]] = None
     ) -> "UserSession":
-        """Créer une nouvelle session utilisateur"""
+        """Creates a new user session"""
+
         return cls(
             id=uuid4(),
             user_id=user_id,
@@ -37,17 +39,17 @@ class UserSession:
         )
 
     def update_last_used(self) -> None:
-        """Mettre à jour la dernière utilisation"""
+        """Updates last used time"""
         self.last_used_at = datetime.now(timezone.utc)
 
     def deactivate(self) -> None:
-        """Désactiver la session"""
+        """Deactivates session"""
         self.is_active = False
 
     def is_expired(self) -> bool:
-        """Vérifier si la session est expirée"""
+        """Checks if session is expired"""
         return datetime.now(timezone.utc) > self.expires_at
 
     def is_valid(self) -> bool:
-        """Vérifier si la session est valide (active et non expirée)"""
+        """Checks if session is valid (active and not expired)"""
         return self.is_active and not self.is_expired()

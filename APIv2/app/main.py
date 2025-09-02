@@ -139,10 +139,6 @@ async def root() -> dict:
 async def health_check() -> dict:
     return {"status": "healthy"}
 
-
-
-
-
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",

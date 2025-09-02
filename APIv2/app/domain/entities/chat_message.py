@@ -1,19 +1,19 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 
 
 class MessageRole(str, Enum):
-    """Rôle du message dans la conversation"""
+    """Available message roles in the conversation"""
     USER = "user"
     ASSISTANT = "assistant"
 
 
 @dataclass
 class MessageSource:
-    """Source d'information utilisée par l'agent pour générer la réponse"""
+    """Information source used by the agent to make its answer"""
     
     vector_id: UUID
     image_id: Optional[UUID]
@@ -30,6 +30,7 @@ class MessageSource:
         image_id: Optional[UUID] = None,
         image_url: Optional[str] = None
     ) -> 'MessageSource':
+        """Factory method to create a source"""
         return cls(
             vector_id=vector_id,
             image_id=image_id,
@@ -41,7 +42,7 @@ class MessageSource:
 
 @dataclass
 class ChatMessage:
-    """Message dans une conversation de chat avec l'agent IA"""
+    """Chat message with the AI agent"""
     
     id: UUID
     conversation_id: UUID
@@ -59,14 +60,14 @@ class ChatMessage:
         content: str,
         message_id: Optional[UUID] = None
     ) -> 'ChatMessage':
-        """Factory method pour créer un message utilisateur"""
+        """Factory method to create a user message"""
         return cls(
             id=message_id or uuid4(),
             conversation_id=conversation_id,
             role=MessageRole.USER,
             content=content,
             sources=[],  # Les messages utilisateur n'ont pas de sources
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
     
     @classmethod
@@ -78,32 +79,25 @@ class ChatMessage:
         search_method: Optional[str] = None,
         message_id: Optional[UUID] = None
     ) -> 'ChatMessage':
-        """Factory method pour créer un message de l'assistant"""
+        """Factory method to create an agent message"""
         return cls(
             id=message_id or uuid4(),
             conversation_id=conversation_id,
             role=MessageRole.ASSISTANT,
             content=content,
             sources=sources,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             search_method=search_method
         )
     
     def is_from_user(self) -> bool:
-        """Vérifie si le message provient de l'utilisateur"""
+        """Checks if the message is from user"""
         return self.role == MessageRole.USER
     
     def is_from_assistant(self) -> bool:
-        """Vérifie si le message provient de l'assistant"""
+        """Checks if the message is from agent"""
         return self.role == MessageRole.ASSISTANT
     
     def has_sources(self) -> bool:
-        """Vérifie si le message a des sources (uniquement pour l'assistant)"""
+        """Checks if the message has sources"""
         return len(self.sources) > 0
-    
-    def get_sources_summary(self) -> str:
-        """Retourne un résumé des sources utilisées"""
-        if not self.has_sources():
-            return "Aucune source"
-        
-        return f"{len(self.sources)} source(s) utilisée(s)"

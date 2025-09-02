@@ -18,6 +18,7 @@ from app.data.connection import Base
 # Mock des services Azure pour les tests
 class MockAzureBlobStorageService:
     """Mock d'Azure Blob Storage pour les tests"""
+    
     async def upload_image(self, game_id, image_id, file_content, filename: str, content_type: str) -> tuple[str, str]:
         file_path = f"games/{game_id}/images/{image_id}/{filename}"
         blob_url = f"https://mock-storage.blob.core.windows.net/gameadvisorstorage/{file_path}"
@@ -31,7 +32,10 @@ class MockAzureBlobStorageService:
 
 class MockOpenAIProcessingService:
     """Mock d'OpenAI Processing pour les tests"""
-    async def process_image(self, image_data: bytes, filename: str) -> dict:
+    def __init__(self):
+        pass
+    
+    async def process_image(self, image_data: bytes, filename: str) -> dict: # Simuler traitement
         return {
             "ocr_text": "Mock OCR text from image",
             "description": "Mock description of game components",
@@ -109,15 +113,25 @@ async def db_session():
 async def mock_azure_services():
     """Override les services Azure avec des mocks pour les tests"""
     
-    # Créer les instances mock
+    # Créer les instances mock comme singletons
     mock_blob_service = MockAzureBlobStorageService()
     mock_ai_service = MockOpenAIProcessingService()
     mock_queue_service = MockRedisQueueService()
     
-    # Override les dépendances
-    app.dependency_overrides[get_blob_storage_service] = lambda: mock_blob_service
-    app.dependency_overrides[get_ai_processing_service] = lambda: mock_ai_service
-    app.dependency_overrides[get_queue_service] = lambda: mock_queue_service
+    # Fonctions de factory qui retournent directement les instances (évite les AsyncMock)
+    def get_mock_blob_service():
+        return mock_blob_service
+    
+    def get_mock_ai_service():
+        return mock_ai_service
+        
+    def get_mock_queue_service():
+        return mock_queue_service
+    
+    # Override les dépendances avec des fonctions normales
+    app.dependency_overrides[get_blob_storage_service] = get_mock_blob_service
+    app.dependency_overrides[get_ai_processing_service] = get_mock_ai_service
+    app.dependency_overrides[get_queue_service] = get_mock_queue_service
     
     yield {
         "blob_service": mock_blob_service,

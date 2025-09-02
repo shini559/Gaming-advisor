@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, delete, text
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.data.models.game_vector import GameVectorModel
@@ -63,94 +63,6 @@ class GameVectorRepository(IGameVectorRepository):
       models = result.scalars().all()
       return [self._model_to_entity(model) for model in models]
 
-  async def search_similar(
-      self,
-      game_id: UUID,
-      query_vector: List[float],
-      limit: int = 10
-  ) -> List[GameVector]:
-      """Recherche de vecteurs similaires pour un jeu donné avec pgvector"""
-      # Utilisation de pgvector pour la recherche de similarité cosinus
-      stmt = text("""
-          SELECT id, game_id, image_id, vector_embedding, extracted_text, page_number, created_at
-          FROM game_vectors
-          WHERE game_id = :game_id
-          ORDER BY vector_embedding <=> :query_vector::vector
-          LIMIT :limit
-      """)
-
-      result = await self._session.execute(
-          stmt,
-          {
-              "game_id": str(game_id),
-              "query_vector": str(query_vector),
-              "limit": limit
-          }
-      )
-
-      vectors = []
-      for row in result:
-          vectors.append(GameVector(
-              id=UUID(row.id),
-              game_id=UUID(row.game_id),
-              image_id=UUID(row.image_id),
-              vector_embedding=row.vector_embedding,
-              extracted_text=row.extracted_text,
-              page_number=row.page_number,
-              created_at=row.created_at
-          ))
-
-      return vectors
-
-  async def search_similar_vectors(
-      self,
-      game_id: UUID,
-      query_embedding: List[float],
-      limit: int = 10,
-      similarity_threshold: float = 0.7
-  ) -> List[GameVector]:
-      """Recherche de vecteurs similaires avec seuil de similarité"""
-      from sqlalchemy import text
-
-      stmt = text("""
-          SELECT id, game_id, image_id, vector_embedding, extracted_text, page_number, created_at,
-                 1 - (vector_embedding <=> :query_vector) as similarity_score
-          FROM game_vectors
-          WHERE game_id = :game_id
-            AND 1 - (vector_embedding <=> :query_vector) >= :similarity_threshold
-          ORDER BY similarity_score DESC
-          LIMIT :limit
-      """)
-
-      # Convertir l'embedding en format pgvector (string JSON array)
-      import json
-      query_vector_str = json.dumps(query_embedding)
-      
-      result = await self._session.execute(
-          stmt,
-          {
-              "game_id": str(game_id),
-              "query_vector": query_vector_str,  # Format pgvector : "[0.1,0.2,0.3]"
-              "similarity_threshold": similarity_threshold,
-              "limit": limit
-          }
-      )
-
-      vectors = []
-      for row in result:
-          vectors.append(GameVector(
-              id=row.id,  # PostgreSQL retourne déjà un UUID
-              game_id=row.game_id,  # PostgreSQL retourne déjà un UUID
-              image_id=row.image_id if row.image_id else None,  # PostgreSQL retourne déjà un UUID
-              vector_embedding=row.vector_embedding,
-              extracted_text=row.extracted_text,
-              page_number=row.page_number,
-              created_at=row.created_at,
-              similarity_score=float(row.similarity_score)  # Score calculé par PostgreSQL
-          ))
-
-      return vectors
-
   async def search_by_vector_type(
       self,
       game_id: UUID,
@@ -164,18 +76,17 @@ class GameVectorRepository(IGameVectorRepository):
       Utilise l'enum VectorSearchType pour la sélection des colonnes
       """
       from sqlalchemy import text
-      from app.domain.entities.vector_search_types import VectorSearchType
+      from app.domain.entities.vector_search_types import VectorSearchMethod
       import json
       
       # Validation et conversion du type
       try:
-          search_enum = VectorSearchType(search_type)
+          search_enum = VectorSearchMethod(search_type)
       except ValueError:
           raise ValueError(f"Type de recherche non supporté: {search_type}")
       
       # Récupération des colonnes via l'enum (type-safe)
-      embedding_column = search_enum.get_embedding_column()
-      content_column = search_enum.get_content_column()
+      embedding_column, content_column = search_enum.get_search_method_column()
       not_null_condition = search_enum.get_not_null_condition()
       
       print(f"🔍 DEBUG REPO: search_type='{search_type}' -> embedding_column='{embedding_column}'")

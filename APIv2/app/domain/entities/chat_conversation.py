@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
 
 @dataclass
 class ChatConversation:
-    """Entité représentant une conversation de chat avec l'agent IA"""
+    """Entity for a chat conversation with tha AI agent"""
     
     id: UUID
     game_id: UUID
@@ -23,8 +23,8 @@ class ChatConversation:
         title: str,
         conversation_id: Optional[UUID] = None
     ) -> 'ChatConversation':
-        """Factory method pour créer une nouvelle conversation"""
-        now = datetime.utcnow()
+        """Factory method to create a new conversation"""
+        now = datetime.now(timezone.utc)
         
         return cls(
             id=conversation_id or uuid4(),
@@ -35,15 +35,6 @@ class ChatConversation:
             updated_at=now
         )
     
-    def update_title(self, new_title: str) -> None:
-        """Met à jour le titre de la conversation"""
-        self.title = new_title
-        self.updated_at = datetime.utcnow()
-    
     def touch(self) -> None:
-        """Met à jour le timestamp updated_at (utilisé lors d'ajout de messages)"""
-        self.updated_at = datetime.utcnow()
-    
-    def is_owned_by(self, user_id: UUID) -> bool:
-        """Vérifie si la conversation appartient à l'utilisateur"""
-        return self.user_id == user_id
+        """Updates the updated_at timestamp (use when adding messages)"""
+        self.updated_at = datetime.now(timezone.utc)

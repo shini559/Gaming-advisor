@@ -11,7 +11,7 @@ class ProcessingJob:
   game_id: UUID
   blob_path: str
   filename: str
-  batch_id: Optional[UUID] = None  # Nouveau: référence au batch parent
+  batch_id: Optional[UUID] = None
   retry_count: int = 0
   max_retries: int = 3
   metadata: Optional[Dict[str, Any]] = None
@@ -37,6 +37,31 @@ class IQueueService(ABC):
       pass
 
   @abstractmethod
+  async def mark_job_processing(self, job_id: str) -> None:
+      """Marks a job as processing"""
+      pass
+
+  @abstractmethod
+  async def mark_job_completed(self, job_id: str) -> None:
+      """Marks a job as successful"""
+      pass
+
+  @abstractmethod
+  async def mark_job_failed(self, job_id: str, error_message: str) -> None:
+      """Marks a job as failed"""
+      pass
+
+  @abstractmethod
   async def retry_failed_job(self, job_id: str) -> bool:
       """Remet en queue une tâche échouée"""
+      pass
+
+  @abstractmethod
+  async def dequeue_job(self) -> Optional[ProcessingJob]:
+      """Gets the next task (with unconnection handling)"""
+      pass
+
+  @abstractmethod
+  async def close(self) -> None:
+      """Closes the Redis conection"""
       pass

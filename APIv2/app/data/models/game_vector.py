@@ -13,6 +13,8 @@ from app.data.connection import Base
 
 
 class GameVectorModel(Base):
+    """SQLAlchemy model for game image vectors"""
+
     __tablename__ = "game_vectors"
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)

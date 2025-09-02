@@ -26,7 +26,7 @@ class RegisterUserResponse:
     first_name: str
     last_name: str
     is_active: bool
-    credits: int
+    token_credits: int
     avatar: Optional[str] = None
 
 
@@ -69,7 +69,7 @@ class RegisterUser:
             first_name=request.first_name,
             last_name=request.last_name,
             hashed_password=hashed_password,
-            credits=100,
+            token_credits=100,
             avatar=request.avatar
         )
 
@@ -84,7 +84,7 @@ class RegisterUser:
             first_name=saved_user.first_name,
             last_name=saved_user.last_name,
             is_active=saved_user.is_active,
-            credits=saved_user.credits,
+            token_credits=saved_user.token_credits,
             avatar=saved_user.avatar
         )
 

@@ -10,6 +10,8 @@ from app.domain.entities.game_image import ImageProcessingStatus
 
 
 class GameImageModel(Base):
+    """SQLAlchemy model for game images"""
+
     __tablename__ = "game_images"
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)

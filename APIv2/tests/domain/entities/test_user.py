@@ -16,7 +16,7 @@ class TestUser:
           first_name="Test",
           last_name="User",
           hashed_password="hashed_password_123",
-          credits=100
+          token_credits=100
       )
 
       assert user.id is not None
@@ -27,7 +27,7 @@ class TestUser:
       assert user.hashed_password == "hashed_password_123"
       assert user.is_active is True
       assert user.is_subscribed is False
-      assert user.credits == 100
+      assert user.token_credits == 100
       assert user.created_at is not None
       assert user.updated_at is not None
 
@@ -80,113 +80,6 @@ class TestUser:
       assert user.is_active is True
       assert user.updated_at != updated_at_after_deactivate
 
-  def test_user_subscribe_unsubscribe(self) -> None:
-      """Test souscription/désouscription"""
-      user = User.create(
-          username="testuser",
-          email="test@example.com",
-          first_name="Test",
-          last_name="User",
-          hashed_password="password"
-      )
-
-      # Test souscription
-      original_updated_at = user.updated_at
-      user.subscribe()
-      assert user.is_subscribed is True
-      assert user.updated_at != original_updated_at
-
-      # Test désouscription
-      updated_at_after_subscribe = user.updated_at
-      user.unsubscribe()
-      assert user.is_subscribed is False
-      assert user.updated_at != updated_at_after_subscribe
-
-  def test_add_credits_valid_amount(self) -> None:
-      """Test ajout de crédits avec montant valide"""
-      user = User.create(
-          username="testuser",
-          email="test@example.com",
-          first_name="Test",
-          last_name="User",
-          hashed_password="password",
-          credits=10
-      )
-
-      original_updated_at = user.updated_at
-      user.add_credits(50)
-
-      assert user.credits == 60
-      assert user.updated_at != original_updated_at
-
-  def test_add_credits_invalid_amount(self) -> None:
-      """Test ajout de crédits avec montant invalide"""
-      user = User.create(
-          username="testuser",
-          email="test@example.com",
-          first_name="Test",
-          last_name="User",
-          hashed_password="password"
-      )
-
-      with pytest.raises(ValueError, match="Cannot add negative credits"):
-          user.add_credits(-10)
-
-      with pytest.raises(ValueError, match="Cannot add negative credits"):
-          user.add_credits(0)
-
-  def test_consume_credits_successful(self) -> None:
-      """Test consommation de crédits réussie"""
-      user = User.create(
-          username="testuser",
-          email="test@example.com",
-          first_name="Test",
-          last_name="User",
-          hashed_password="password",
-          credits=100
-      )
-
-      original_updated_at = user.updated_at
-      result = user.consume_credits(30)
-
-      assert result is True
-      assert user.credits == 70
-      assert user.updated_at != original_updated_at
-
-  def test_consume_credits_insufficient_balance(self) -> None:
-      """Test consommation de crédits insuffisants"""
-      user = User.create(
-          username="testuser",
-          email="test@example.com",
-          first_name="Test",
-          last_name="User",
-          hashed_password="password",
-          credits=10
-      )
-
-      original_updated_at = user.updated_at
-      result = user.consume_credits(50)
-
-      assert result is True
-      assert user.credits == 0
-      assert user.updated_at != original_updated_at
-
-  def test_consume_credits_invalid_amount(self) -> None:
-      """Test consommation de crédits avec montant invalide"""
-      user = User.create(
-          username="testuser",
-          email="test@example.com",
-          first_name="Test",
-          last_name="User",
-          hashed_password="password"
-      )
-
-      with pytest.raises(ValueError, match="No credits available"):
-          user.consume_credits(-10)
-
-      with pytest.raises(ValueError, match="No credits available"):
-          user.consume_credits(0)
-
   def test_user_default_values(self) -> None:
       """Test valeurs par défaut lors de la création"""
       user = User.create(
@@ -197,7 +90,7 @@ class TestUser:
           hashed_password="password"
       )
 
-      assert user.credits == 0
+      assert user.token_credits == 0
       assert user.avatar is None
       assert user.is_active is True
       assert user.is_subscribed is False

@@ -7,6 +7,7 @@ from openai import AsyncAzureOpenAI
 from PIL import Image
 
 from app.config import settings
+from app.domain.entities.vector_search_types import ProcessingType
 from app.domain.ports.services.ai_processing_service import IAIProcessingService, AIProcessingResult
 
 
@@ -48,20 +49,26 @@ class OpenAIProcessingService(IAIProcessingService):
           processed_image = await self._prepare_image(image_data)
           image_base64 = base64.b64encode(processed_image).decode('utf-8')
 
-          # === Architecture modulaire 3-paires ===
           result = AIProcessingResult()
-          
+
           # Traitement en parallèle selon configuration
           processing_tasks = []
-          
-          if settings.enable_ocr:
-              processing_tasks.append(("ocr", self._extract_text(image_base64)))
-          if settings.enable_visual_description:
-              processing_tasks.append(("description", self._describe_image(image_base64)))
-          if settings.enable_labeling:
-              processing_tasks.append(("labels", self._label_image(image_base64)))
-          
+
+          processing_config = [
+              (ProcessingType.OCR, "ocr", self._extract_text),
+              (ProcessingType.VISUAL_DESCRIPTION, "description", self._describe_image),
+              (ProcessingType.METADATA_LABELS, "labels", self._label_image)
+          ]
+
+          # Activate/deactivate processing methods according to settings
+          for processing_type, task_name, method in processing_config:
+              config_flag = processing_type.get_config_flag()
+              if getattr(settings, config_flag):
+                  processing_tasks.append((task_name, method(image_base64)))
+
+
           # Phase 1 : Extraction du contenu
+
           if processing_tasks:
               processing_results = await asyncio.gather(*[task[1] for task in processing_tasks])
               

@@ -69,10 +69,10 @@ async def get_current_subscribed_user(
 
 def require_credits(min_credits: int = 1):
   async def _require_credits(current_user: User = Depends(get_current_user)) -> User:
-      if current_user.credits < min_credits:
+      if current_user.token_credits < min_credits:
           raise HTTPException(
               status_code=status.HTTP_402_PAYMENT_REQUIRED,
-              detail=f"Insufficient credits. Required: {min_credits}, Available: {current_user.credits}"
+              detail=f"Insufficient credits. Required: {min_credits}, Available: {current_user.token_credits}"
           )
       return current_user
   return _require_credits

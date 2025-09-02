@@ -24,8 +24,8 @@ class StartProcessingWorkerUseCase:
       queue_service: IQueueService,
       blob_service: IBlobStorageService,
       ai_service: IAIProcessingService,
-      image_repository: IGameImageRepository,
-      vector_repository: IGameVectorRepository
+      image_repository: Optional[IGameImageRepository],
+      vector_repository: Optional[IGameVectorRepository]
   ):
       self._queue_service = queue_service
       self._blob_service = blob_service

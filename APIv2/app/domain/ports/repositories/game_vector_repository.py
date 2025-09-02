@@ -29,6 +29,21 @@ class IGameVectorRepository(ABC):
       pass
 
   @abstractmethod
+  async def search_by_embedding_type(
+      self,
+      game_id: UUID,
+      query_embedding: List[float],
+      embedding_type: str,  # "ocr" | "description" | "labels" - SEULEMENT pour la recherche
+      limit: int = 10,
+      similarity_threshold: float = 0.7
+  ) -> List[GameVector]:
+      """
+      Recherche vectorielle découplée - utilise seulement embedding_type pour la similarité
+      Retourne TOUT le contenu pour que l'agent puisse choisir ses champs
+      """
+      pass
+
+  @abstractmethod
   async def search_by_vector_type(
       self,
       game_id: UUID,
@@ -38,8 +53,8 @@ class IGameVectorRepository(ABC):
       similarity_threshold: float = 0.7
   ) -> List[GameVector]:
       """
+      DEPRECATED: Utiliser search_by_embedding_type à la place
       Recherche vectorielle type-safe avec architecture 3-paires
-      Utilise l'enum VectorSearchType pour la sélection des colonnes
       """
       pass
 

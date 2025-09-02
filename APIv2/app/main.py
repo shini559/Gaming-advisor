@@ -1,16 +1,12 @@
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.logger import logger
-from fastapi.middleware.cors import CORSMiddleware
-from starlette import status
+from starlette.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.data.connection import create_database_engine
-from app.dependencies import get_queue_service, get_blob_storage_service
-from app.dependencies.images import get_start_processing_worker_use_case, get_ai_processing_service
 from app.domain.use_cases.images.start_processing_worker import StartProcessingWorkerUseCase
 from app.presentation.routes.auth import router as auth_router
 from app.presentation.routes.games import router as games_router
@@ -80,10 +76,10 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     print("=== LIFESPAN SHUTDOWN ===")
-    logger.info("🛑 Shutting down GameAdvisor API v2...")
+    logger.info(f"Shutting down {settings.api_title}...")
     if worker_use_case:
         await worker_use_case.stop()
-        logger.info("✅ Image processing worker stopped")
+        logger.info("Image processing worker stopped")
 
 
 # Create FastAPI app instance
@@ -95,9 +91,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
+# Add CORS middleware  
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore
     allow_origins=["*"],  # Configure as needed for production
     allow_credentials=True,
     allow_methods=["*"],

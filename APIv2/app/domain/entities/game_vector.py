@@ -30,12 +30,3 @@ class GameVector:
     page_number: Optional[int] = None
     similarity_score: Optional[float] = None  # Calculated during search
     
-    def get_content_for_search_type(self, search_type: str) -> Optional[str]:
-        """Returns the appropriate type according to search method"""
-        if search_type == "ocr":
-            return self.ocr_content
-        elif search_type == "description":
-            return self.description_content
-        elif search_type == "labels":
-            return self.labels_content
-        return None

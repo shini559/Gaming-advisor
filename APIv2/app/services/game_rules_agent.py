@@ -1,8 +1,13 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from uuid import UUID
 
 from openai import AsyncAzureOpenAI
+from openai.types.chat import (
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+    ChatCompletionMessageParam
+)
 
 from app.config import settings
 from app.domain.entities.chat_message import MessageSource
@@ -67,8 +72,8 @@ class GameRulesAgent(IGameRulesAgent):
                 content=response_content,
                 sources=sources,
                 confidence=confidence,
-                search_method=settings.search_method,
-                reasoning=f"Réponse générée avec {len(sources)} source(s)"
+                search_method=settings.vector_search_method,  # Méthode de recherche découplée
+                reasoning=f"Réponse générée avec {len(sources)} source(s) - Recherche: {settings.vector_search_method}, Contenu: {settings.agent_content_fields}, Images: {settings.agent_send_images}"
             )
             
         except Exception as e:
@@ -81,7 +86,7 @@ class GameRulesAgent(IGameRulesAgent):
                 content="Je rencontre un problème technique. Peux-tu reformuler ta question ?",
                 sources=[],
                 confidence=0.0,
-                search_method=settings.search_method,
+                search_method=settings.vector_search_method,
                 reasoning=f"Erreur: {str(e)}"
             )
     
@@ -134,17 +139,16 @@ class GameRulesAgent(IGameRulesAgent):
             logger.error(f"💥 Type: {type(e).__name__}")
             raise
         
-        # 3. Formater les résultats pour l'IA (architecture 3-paires)
+        # 3. Formater les résultats pour l'IA (architecture découplée)
         formatted_results = []
         for result in search_results:
             formatted_result = {
-                'content': result.extracted_text,  # Contenu sélectionné selon search_method
+                'all_content': result.all_content,  # TOUT le contenu découplé
                 'similarity': result.similarity_score,
                 'page': result.page_number,
                 'has_image': result.has_image(),
                 'image_url': result.image_url,
                 'image_id': str(result.image_id) if result.image_id else None,
-                'search_method': settings.search_method,  # Type de recherche utilisé
                 'vector_id': str(result.vector_id)
             }
             formatted_results.append(formatted_result)
@@ -153,16 +157,20 @@ class GameRulesAgent(IGameRulesAgent):
             game_id=request.game_id,
             conversation_history=conversation_history,
             search_results=formatted_results,
-            user_question=request.user_message
+            user_question=request.user_message,
+            # === NOUVELLES INFORMATIONS DÉCOUPLÉES ===
+            should_send_images=settings.agent_send_images,
+            content_fields=settings.agent_content_fields,
+            search_method_used=settings.vector_search_method
         )
     
     async def _generate_with_context(self, context: AgentContext) -> tuple[str, List[MessageSource], float]:
-        """Génère une réponse avec le contexte fourni (approche hybride)"""
+        """Génère une réponse avec le contexte fourni - VERSION DÉCOUPLÉE"""
         
-        # 1. Si on utilise la méthode labels, récupérer les images originales
+        # 1. IMAGES - découplé de la méthode de recherche
         images_content = []
-        if settings.search_method == "labels":
-            logger.info("📸 Mode labels actif - récupération des images originales")
+        if context.should_send_images:
+            logger.info("📸 Mode images DÉCOUPLÉ actif - récupération des images originales")
             
             # Récupérer les IDs des images trouvées
             image_ids = [r['image_id'] for r in context.search_results if r.get('image_id')]
@@ -175,8 +183,6 @@ class GameRulesAgent(IGameRulesAgent):
                 try:
                     image = await self.image_repository.get_by_id(image_id)
                     if image and image.blob_url:
-                        # Pour GPT-4 Vision, on a besoin des données base64
-                        # Ici on utilise l'URL pour simplifier (Azure blob)
                         images_content.append({
                             "type": "image_url",
                             "image_url": {"url": image.blob_url}
@@ -185,55 +191,65 @@ class GameRulesAgent(IGameRulesAgent):
                 except Exception as e:
                     logger.warning(f"⚠️ Erreur chargement image {image_id}: {e}")
         
-        # 2. Construire le prompt avec contexte
-        context_text = self._build_context_prompt(context)
+        # 2. CONTENU TEXTUEL - découplé avec sélection multiple
+        context_text = self._build_context_from_fields(context)
         
-        # 3. Préparer les messages selon le mode (architecture 3-paires)
-        if images_content and settings.search_method == "labels":
-            # Mode hybride labels : métadonnées JSON + images directes
+        # 3. PRÉPARATION MESSAGES - logique simplifiée et découplée
+        messages: List[ChatCompletionMessageParam] = []
+        
+        if images_content:
+            # Mode multimodal : contenu sélectionné + images
             user_content = [
-                {"type": "text", "text": f"""Mode de recherche: LABELS (métadonnées JSON)
+                {"type": "text", "text": f"""Configuration découplée:
+- Recherche de similarité: {context.search_method_used}
+- Contenu textuel: {', '.join(context.content_fields)}
+- Envoi d'images: activé
 
-Contexte des métadonnées trouvées:
+Contexte trouvé dans les règles:
 {context_text}
 
 Question de l'utilisateur: {context.user_question}
 
-ANALYSE LES IMAGES FOURNIES pour répondre à cette question. Les métadonnées ci-dessus te guident sur le contenu des images, mais base-toi principalement sur ton analyse visuelle directe des règles."""}
+ANALYSE les images fournies et utilise le contexte textuel pour répondre à cette question."""}
             ]
             user_content.extend(images_content)
             
-            messages = [
-                {"role": "system", "content": settings.agent_system_prompt},
-                {"role": "user", "content": user_content}
-            ]
+            system_message: ChatCompletionSystemMessageParam = {
+                "role": "system", 
+                "content": settings.agent_system_prompt
+            }
+            user_message: ChatCompletionUserMessageParam = {
+                "role": "user", 
+                "content": user_content
+            }
+            messages = [system_message, user_message]
             
-            logger.info(f"🤖 Envoi à GPT-4 Vision: {len(images_content)} images + contexte textuel")
+            logger.info(f"🤖 Mode multimodal DÉCOUPLÉ: {len(images_content)} images + champs {context.content_fields}")
         else:
-            # Mode classique : OCR ou Description textuelle
-            search_type_desc = {
-                "ocr": "texte OCR extrait",
-                "description": "descriptions visuelles",
-                "labels": "métadonnées JSON"
-            }.get(settings.search_method, "contenu")
+            # Mode textuel : contenu sélectionné uniquement
+            content_desc = f"champs textuels: {', '.join(context.content_fields)}"
             
-            messages = [
-                {
-                    "role": "system", 
-                    "content": settings.agent_system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": f"""Mode de recherche: {settings.search_method.upper()} ({search_type_desc})
+            system_message: ChatCompletionSystemMessageParam = {
+                "role": "system", 
+                "content": settings.agent_system_prompt
+            }
+            user_message: ChatCompletionUserMessageParam = {
+                "role": "user",
+                "content": f"""Configuration découplée:
+- Recherche de similarité: {context.search_method_used}
+- Contenu textuel: {', '.join(context.content_fields)}
+- Envoi d'images: désactivé
 
-Contexte des règles du jeu:
+Contexte trouvé dans les règles:
 {context_text}
 
 Question de l'utilisateur: {context.user_question}
 
 Réponds en te basant uniquement sur le contexte fourni. Si tu ne trouves pas la réponse dans le contexte, dis-le clairement."""
-                }
-            ]
+            }
+            messages = [system_message, user_message]
+            
+            logger.info(f"🤖 Mode textuel DÉCOUPLÉ: recherche {context.search_method_used}, {content_desc}")
         
         # 3. Appeler GPT-4
         try:
@@ -246,13 +262,28 @@ Réponds en te basant uniquement sur le contexte fourni. Si tu ne trouves pas la
             
             response_content = response.choices[0].message.content
             
-            # 4. Construire les sources
+            # 4. Construire les sources (découplé)
             sources = []
             for result in context.search_results:
+                # Utiliser le contenu des champs sélectionnés pour le snippet
+                from app.domain.ports.services.vector_search_service import VectorSearchResult
+                dummy_result = VectorSearchResult(
+                    vector_id=UUID(result['vector_id']),
+                    game_id=context.game_id,
+                    image_id=UUID(result.get('image_id')) if result.get('image_id') else None,
+                    similarity_score=result['similarity'],
+                    image_url=result.get('image_url'),
+                    page_number=result.get('page'),
+                    all_content=result['all_content']
+                )
+                
+                content_snippet = dummy_result.get_content_for_fields(context.content_fields)
+                snippet_preview = content_snippet[:200] + "..." if len(content_snippet) > 200 else content_snippet
+                
                 source = MessageSource.create(
                     vector_id=UUID(result['vector_id']),
                     similarity_score=result['similarity'],
-                    content_snippet=result['content'][:200] + "..." if len(result['content']) > 200 else result['content'],
+                    content_snippet=snippet_preview,
                     image_id=UUID(result.get('image_id')) if result.get('image_id') else None,
                     image_url=result.get('image_url')
                 )
@@ -272,8 +303,8 @@ Réponds en te basant uniquement sur le contexte fourni. Si tu ne trouves pas la
             logger.error(f"Erreur lors de la génération avec GPT-4: {str(e)}")
             raise
     
-    def _build_context_prompt(self, context: AgentContext) -> str:
-        """Construit le prompt de contexte pour l'IA (architecture 3-paires)"""
+    def _build_context_from_fields(self, context: AgentContext) -> str:
+        """Construit le contexte selon les champs demandés - VERSION DÉCOUPLÉE"""
         parts = []
         
         # Historique de conversation
@@ -282,29 +313,39 @@ Réponds en te basant uniquement sur le contexte fourni. Si tu ne trouves pas la
             parts.extend(context.conversation_history[-5:])  # 5 derniers échanges
             parts.append("")
         
-        # Résultats de recherche avec information sur le type
+        # Résultats de recherche avec contenu des champs sélectionnés
         if context.search_results:
-            search_method = context.search_results[0].get('search_method', 'unknown') if context.search_results else 'unknown'
-            method_name = {
-                "ocr": "TEXTE OCR EXTRAIT",
-                "description": "DESCRIPTIONS VISUELLES", 
-                "labels": "MÉTADONNÉES JSON"
-            }.get(search_method, "RÈGLES")
+            content_fields_desc = ', '.join(context.content_fields)
+            parts.append(f"=== RÈGLES TROUVÉES (champs: {content_fields_desc}) ===")
             
-            parts.append(f"=== {method_name} PERTINENTES ===")
             for i, result in enumerate(context.search_results, 1):
-                parts.append(f"Source {i} (similarité: {result['similarity']:.2f}, type: {search_method}):")
+                parts.append(f"Source {i} (similarité: {result['similarity']:.2f}, recherche: {context.search_method_used}):")
                 if result.get('page'):
                     parts.append(f"Page: {result['page']}")
                 
-                # Afficher le contenu selon le type
-                if result['content']:
-                    parts.append(result['content'])
+                # Construire le contenu à partir des champs sélectionnés
+                from app.domain.ports.services.vector_search_service import VectorSearchResult
+                dummy_result = VectorSearchResult(
+                    vector_id=UUID(result['vector_id']),
+                    game_id=context.game_id,
+                    image_id=UUID(result.get('image_id')) if result.get('image_id') else None,
+                    similarity_score=result['similarity'],
+                    image_url=result.get('image_url'),
+                    page_number=result.get('page'),
+                    all_content=result['all_content']
+                )
+                
+                combined_content = dummy_result.get_content_for_fields(context.content_fields)
+                if combined_content:
+                    parts.append(combined_content)
                 else:
-                    parts.append("[Pas de contenu textuel - voir image associée]")
+                    parts.append("[Aucun contenu disponible pour les champs sélectionnés]")
                     
                 if result['has_image']:
-                    parts.append("[Cette source contient des éléments visuels]")
+                    if context.should_send_images:
+                        parts.append("[Cette source contient des éléments visuels - images fournies séparément]")
+                    else:
+                        parts.append("[Cette source contient des éléments visuels - non incluses]")
                 parts.append("")
         
         return "\n".join(parts)

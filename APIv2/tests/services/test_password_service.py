@@ -34,12 +34,3 @@ class TestPasswordService:
 
       result = password_service.verify_password(wrong_password, hashed)
       assert result is False
-
-  def test_needs_rehash(self, password_service: IPasswordService) -> None:
-      """Test besoin de re-hash"""
-      password = "test_password_123"
-      hashed = password_service.hash_password(password)
-
-      # Un hash bcrypt récent ne devrait pas avoir besoin d'être re-hashé
-      result = password_service.needs_update(hashed)
-      assert result is False

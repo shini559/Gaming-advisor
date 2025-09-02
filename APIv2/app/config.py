@@ -1,6 +1,5 @@
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
-from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -74,7 +73,10 @@ class Settings(BaseSettings):
     enable_ocr: bool = True                 # Activer extraction OCR
     enable_visual_description: bool = True  # Activer description visuelle
     enable_labeling: bool = True           # Activer métadonnées JSON
-    search_method: str = "description"          # "ocr" | "description" | "labels" | "hybrid"
+
+    vector_search_method: str = "description"  # "ocr" | "description" | "labels"  /  Used for similarity search
+    agent_send_images: bool = False # Send images for the selected vectors to the agent
+    agent_content_fields: List[str] = ["description"]  # ["ocr", "description", "labels"] - multi-sélection / Text fields sent to the agent
 
     # AI Processing Prompts
     ocr_prompt: str = """Extracte tout le texte visible dans cette image de règles de jeu de société.
@@ -135,13 +137,32 @@ Answer questions clearly and directly. Use simple French. Ask questions if you n
 
     
     def __post_init__(self):
-        """Validate critical security settings"""
+        """Validate critical security settings and AI configuration"""
         if self.jwt_secret_key == "CHANGE-ME-IN-PRODUCTION-USE-STRONG-256-BIT-KEY":
             import warnings
             warnings.warn("⚠️ Using default JWT secret key! Set JWT_SECRET_KEY in production!")
         
         if len(self.jwt_secret_key) < 32:
             raise ValueError("JWT secret key must be at least 32 characters long")
+            
+        # Validation de la nouvelle configuration découplée
+        self._validate_decoupled_config()
+    
+    def _validate_decoupled_config(self) -> None:
+        """Valide la configuration découplée des 3 préoccupations"""
+        # Validation vector_search_method
+        valid_search_methods = ["ocr", "description", "labels"]
+        if self.vector_search_method not in valid_search_methods:
+            raise ValueError(f"vector_search_method must be one of {valid_search_methods}, got: {self.vector_search_method}")
+        
+        # Validation agent_content_fields
+        valid_content_fields = {"ocr", "description", "labels"}
+        invalid_fields = set(self.agent_content_fields) - valid_content_fields
+        if invalid_fields:
+            raise ValueError(f"agent_content_fields contains invalid values: {invalid_fields}. Valid values: {valid_content_fields}")
+        
+        if not self.agent_content_fields:
+            raise ValueError("agent_content_fields cannot be empty")
     
     @property
     def database_url(self) -> Optional[str]:
@@ -157,7 +178,7 @@ Answer questions clearly and directly. Use simple French. Ask questions if you n
             return None
         return f"https://{self.azure_storage_account}.blob.core.windows.net"
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore"

@@ -69,21 +69,22 @@ def get_vector_search_service(
     return _vector_search_service
 
 
-def get_game_rules_agent(
-    vector_search_service: IVectorSearchService = Depends(get_vector_search_service),
-    message_repository: IChatMessageRepository = Depends(get_chat_message_repository),
-    image_repository: IGameImageRepository = Depends(get_game_image_repository)
-) -> IGameRulesAgent:
-    """Dépendance pour l'agent IA des règles de jeu"""
-    global _game_rules_agent
-    if _game_rules_agent is None:
-        _game_rules_agent = GameRulesAgent(vector_search_service, message_repository, image_repository)
-    return _game_rules_agent
-
-
 def get_conversation_history_service(
     message_repository: IChatMessageRepository = Depends(get_chat_message_repository),
     feedback_repository: IChatFeedbackRepository = Depends(get_chat_feedback_repository)
 ) -> ConversationHistoryService:
     """Dépendance pour le service d'historique de conversation avec feedback"""
     return ConversationHistoryService(message_repository, feedback_repository)
+
+
+def get_game_rules_agent(
+    vector_search_service: IVectorSearchService = Depends(get_vector_search_service),
+    message_repository: IChatMessageRepository = Depends(get_chat_message_repository),
+    image_repository: IGameImageRepository = Depends(get_game_image_repository),
+    conversation_history_service: ConversationHistoryService = Depends(get_conversation_history_service)
+) -> IGameRulesAgent:
+    """Dépendance pour l'agent IA des règles de jeu"""
+    global _game_rules_agent
+    if _game_rules_agent is None:
+        _game_rules_agent = GameRulesAgent(vector_search_service, message_repository, image_repository, conversation_history_service)
+    return _game_rules_agent

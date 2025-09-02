@@ -6,22 +6,37 @@ from uuid import UUID
 
 @dataclass
 class VectorSearchResult:
-    """Résultat d'une recherche vectorielle"""
+    """Résultat d'une recherche vectorielle découplée"""
     
     vector_id: UUID
     game_id: UUID
     image_id: Optional[UUID]
     similarity_score: float
-    extracted_text: str
     image_url: Optional[str]
     page_number: Optional[int]
     
+    # === CONTENU COMPLET DÉCOUPLÉ ===
+    all_content: dict[str, Optional[str]]  # {"ocr": "...", "description": "...", "labels": "..."}
+    
+    def get_content_for_fields(self, fields: list[str]) -> str:
+        """Retourne le contenu combiné pour les champs demandés"""
+        contents = []
+        for field in fields:
+            if field in self.all_content and self.all_content[field]:
+                contents.append(f"=== {field.upper()} ===\n{self.all_content[field]}")
+        return "\n\n".join(contents)
+    
     @property
     def content_snippet(self) -> str:
-        """Retourne un extrait du contenu pour affichage"""
-        if len(self.extracted_text) > 200:
-            return self.extracted_text[:200] + "..."
-        return self.extracted_text
+        """Retourne un extrait de tous les contenus disponibles pour affichage"""
+        all_texts = []
+        for field, content in self.all_content.items():
+            if content:
+                all_texts.append(f"{field}: {content[:100]}")
+        combined = " | ".join(all_texts)
+        if len(combined) > 200:
+            return combined[:200] + "..."
+        return combined
     
     def has_image(self) -> bool:
         """Vérifie si le résultat a une image associée"""

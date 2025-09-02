@@ -8,21 +8,29 @@ from app.domain.entities.chat_message import MessageSource
 
 @dataclass
 class AgentContext:
-    """Contexte fourni à l'agent IA"""
+    """Contexte fourni à l'agent IA - Version découplée"""
     
     game_id: UUID
     conversation_history: List[str]  # Historique formaté pour l'IA
     search_results: List[dict]  # Résultats de recherche vectorielle formatés
     user_question: str
     
-    # has_relevant_context() supprimée - l'agent décide directement
+    # === NOUVELLES INFORMATIONS DÉCOUPLÉES ===
+    should_send_images: bool  # Basé sur agent_send_images
+    content_fields: List[str]  # Champs demandés par agent_content_fields
+    search_method_used: str   # Méthode de recherche utilisée (pour info/debug)
     
     def get_context_summary(self) -> str:
         """Retourne un résumé du contexte disponible"""
         if len(self.search_results) == 0:
             return "Aucun contexte trouvé"
         
-        return f"{len(self.search_results)} source(s) trouvée(s) dans les règles"
+        summary = f"{len(self.search_results)} source(s) trouvée(s) dans les règles"
+        summary += f" (recherche: {self.search_method_used}, contenu: {', '.join(self.content_fields)}"
+        if self.should_send_images:
+            summary += ", avec images"
+        summary += ")"
+        return summary
 
 
 @dataclass

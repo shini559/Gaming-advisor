@@ -63,40 +63,38 @@ class GameVectorRepository(IGameVectorRepository):
       models = result.scalars().all()
       return [self._model_to_entity(model) for model in models]
 
-  async def search_by_vector_type(
+  async def search_by_embedding_type(
       self,
       game_id: UUID,
       query_embedding: List[float],
-      search_type: str,  # "ocr" | "description" | "labels"
+      embedding_type: str,  # "ocr" | "description" | "labels" - SEULEMENT pour la recherche
       limit: int = 10,
       similarity_threshold: float = 0.7
   ) -> List[GameVector]:
       """
-      Recherche vectorielle type-safe avec architecture 3-paires
-      Utilise l'enum VectorSearchType pour la sélection des colonnes
+      Recherche vectorielle découplée - utilise seulement embedding_type pour la similarité
+      Retourne TOUT le contenu pour que l'agent puisse choisir ses champs
       """
       from sqlalchemy import text
       from app.domain.entities.vector_search_types import VectorSearchMethod
       import json
       
-      # Validation et conversion du type
+      # Validation et conversion du type de recherche
       try:
-          search_enum = VectorSearchMethod(search_type)
+          search_enum = VectorSearchMethod(embedding_type)
       except ValueError:
-          raise ValueError(f"Type de recherche non supporté: {search_type}")
+          raise ValueError(f"Type de recherche non supporté: {embedding_type}")
       
-      # Récupération des colonnes via l'enum (type-safe)
-      embedding_column, content_column = search_enum.get_search_method_column()
+      # Récupération SEULEMENT de la colonne embedding (découplée du contenu)
+      embedding_column = search_enum.get_embedding_column()
       not_null_condition = search_enum.get_not_null_condition()
       
-      print(f"🔍 DEBUG REPO: search_type='{search_type}' -> embedding_column='{embedding_column}'")
+      print(f"🔍 DEBUG REPO DÉCOUPLÉ: embedding_type='{embedding_type}' -> embedding_column='{embedding_column}'")
 
-      # Requête SQL avec architecture 3-paires
+      # Requête SQL découplée - on récupère TOUT le contenu
       stmt = text(f"""
-          SELECT id, game_id, image_id, 
-                 ocr_content, ocr_embedding,
-                 description_content, description_embedding,
-                 labels_content, labels_embedding,
+          SELECT id, game_id, image_id,
+                 ocr_content, description_content, labels_content,
                  page_number, created_at,
                  1 - ({embedding_column} <=> :query_vector) as similarity_score
           FROM game_vectors
@@ -119,7 +117,7 @@ class GameVectorRepository(IGameVectorRepository):
           }
       )
 
-      # Conversion avec architecture 3-paires
+      # Conversion avec tout le contenu disponible
       vectors = []
       for row in result:
           vector = GameVector(
@@ -127,13 +125,13 @@ class GameVectorRepository(IGameVectorRepository):
               game_id=row.game_id,
               image_id=row.image_id if row.image_id else None,
               
-              # Architecture 3-paires complète
+              # TOUT le contenu pour l'agent (découplé de la recherche)
               ocr_content=row.ocr_content,
-              ocr_embedding=row.ocr_embedding,
+              ocr_embedding=None,  # Pas besoin des embeddings dans les résultats
               description_content=row.description_content,
-              description_embedding=row.description_embedding,
+              description_embedding=None,
               labels_content=row.labels_content,
-              labels_embedding=row.labels_embedding,
+              labels_embedding=None,
               
               page_number=row.page_number,
               created_at=row.created_at,
@@ -142,6 +140,20 @@ class GameVectorRepository(IGameVectorRepository):
           vectors.append(vector)
 
       return vectors
+
+  # Gardons l'ancienne méthode pour la compatibilité pendant la transition
+  async def search_by_vector_type(
+      self,
+      game_id: UUID,
+      query_embedding: List[float],
+      search_type: str,
+      limit: int = 10,
+      similarity_threshold: float = 0.7
+  ) -> List[GameVector]:
+      """DEPRECATED: Utiliser search_by_embedding_type à la place"""
+      return await self.search_by_embedding_type(
+          game_id, query_embedding, search_type, limit, similarity_threshold
+      )
 
   async def delete(self, vector_id: UUID) -> bool:
       """Supprime un vecteur"""

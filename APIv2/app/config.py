@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     api_title: str = "GameAdvisor API"
     api_version: str = "0.0.1"
     debug: bool = True
-    sql_debug: bool = True
+    sql_debug: bool = False
     
     # Server Configuration
     host: str = "0.0.0.0"
@@ -71,11 +71,12 @@ class Settings(BaseSettings):
     
     # AI Processing Methods (toggles)
     enable_ocr: bool = True                 # Activer extraction OCR
-    enable_visual_description: bool = True  # Activer description visuelle
-    enable_labeling: bool = True           # Activer métadonnées JSON
+    enable_visual_description: bool = False  # Activer description visuelle
+    enable_labeling: bool = False           # Activer métadonnées JSON
 
+    # AI search methods
     vector_search_method: str = "description"  # "ocr" | "description" | "labels"  /  Used for similarity search
-    agent_send_images: bool = False # Send images for the selected vectors to the agent
+    agent_send_images: bool = True # Send images for the selected vectors to the agent
     agent_content_fields: List[str] = ["description"]  # ["ocr", "description", "labels"] - multi-sélection / Text fields sent to the agent
 
     # AI Processing Prompts

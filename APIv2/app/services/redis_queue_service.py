@@ -108,39 +108,65 @@ class RedisQueueService(IQueueService):
   ) -> str:
       """Adds an image treatment job to the queue"""
 
-      redis_client = await self._get_redis()
+      if settings.debug:
+          logging.info(f"[REDIS_DEBUG] Enqueue - Image: {image_id}, Batch: {batch_id}, Filename: {filename}")
 
-      # Generate a unique job ID
-      job_id = f"job_{image_id}_{datetime.now(timezone.utc).timestamp()}"
+      try:
+          redis_client = await self._get_redis()
 
-      # Serialize job
-      job_data = {
-          "job_id": job_id,
-          "image_id": str(image_id),
-          "game_id": str(game_id),
-          "blob_path": blob_path,
-          "filename": filename,
-          "batch_id": str(batch_id) if batch_id else None,
-          "retry_count": 0,
-          "max_retries": settings.queue_retry_attempts,
-          "metadata": {},
-          "created_at": datetime.now(timezone.utc).isoformat(),
-      }
+          # Generate a unique job ID
+          job_id = f"job_{image_id}_{datetime.now(timezone.utc).timestamp()}"
 
-      # Store job data
-      await redis_client.setex(
-          f"{self.JOB_DATA_PREFIX}{job_id}",
-          timedelta(hours=settings.redis_ttl),
-          json.dumps(job_data)
-      )
+          # Serialize job
+          job_data = {
+              "job_id": job_id,
+              "image_id": str(image_id),
+              "game_id": str(game_id),
+              "blob_path": blob_path,
+              "filename": filename,
+              "batch_id": str(batch_id) if batch_id else None,
+              "retry_count": 0,
+              "max_retries": settings.queue_retry_attempts,
+              "metadata": {},
+              "created_at": datetime.now(timezone.utc).isoformat(),
+          }
 
-      # Add to queue
-      await redis_client.lpush(self.QUEUE_NAME, job_id)
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Job data created - Job ID: {job_id}")
 
-      # Mark as queued
-      await self._set_job_status(job_id, "queued")
+          # Store job data
+          await redis_client.setex(
+              f"{self.JOB_DATA_PREFIX}{job_id}",
+              timedelta(hours=settings.redis_ttl),
+              json.dumps(job_data)
+          )
 
-      return job_id
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Job data stored in Redis")
+
+          # Add to queue
+          await redis_client.lpush(self.QUEUE_NAME, job_id)
+
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Job added to queue: {self.QUEUE_NAME}")
+
+          # Mark as queued
+          await self._set_job_status(job_id, "queued")
+
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Job {job_id} successfully enqueued")
+
+          return job_id
+
+      except Exception as e:
+          if settings.debug:
+              logging.error(f"[REDIS_DEBUG] ERREUR lors de l'enqueue:")
+              logging.error(f"[REDIS_DEBUG] - Image ID: {image_id}")
+              logging.error(f"[REDIS_DEBUG] - Batch ID: {batch_id}")
+              logging.error(f"[REDIS_DEBUG] - Filename: {filename}")
+              logging.error(f"[REDIS_DEBUG] - Erreur: {str(e)}")
+              logging.error(f"[REDIS_DEBUG] - Type: {type(e).__name__}")
+          raise
 
   async def get_job_status(self, job_id: str) -> Optional[str]:
       """Gets the status for a job"""
@@ -215,21 +241,49 @@ class RedisQueueService(IQueueService):
       """Gets the next task (with unconnection handling)"""
 
       try:
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Attempting to dequeue from {self.QUEUE_NAME} (timeout: 30s)")
+          
           redis_client = await self._get_redis()
           
           result = await redis_client.brpop(self.QUEUE_NAME, timeout=30)
           if not result:
               # Normal timeout - no error
+              if settings.debug:
+                  logging.info(f"[REDIS_DEBUG] Dequeue timeout (normal - no jobs available)")
               return None
-
 
           _, job_id = result # Get job_id
 
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Dequeued job ID: {job_id}")
+
           job_data = await redis_client.get(f"{self.JOB_DATA_PREFIX}{job_id}")
           if not job_data:
+              if settings.debug:
+                  logging.error(f"[REDIS_DEBUG] PROBLÈME: Job data not found for {job_id}")
+                  logging.error(f"[REDIS_DEBUG] Key recherchée: {self.JOB_DATA_PREFIX}{job_id}")
               return None
 
-          job_info = json.loads(job_data)
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Job data retrieved successfully for {job_id}")
+
+          try:
+              job_info = json.loads(job_data)
+          except json.JSONDecodeError as e:
+              if settings.debug:
+                  logging.error(f"[REDIS_DEBUG] ERREUR JSON decode pour {job_id}: {str(e)}")
+                  logging.error(f"[REDIS_DEBUG] Raw job data: {job_data}")
+              return None
+
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Creating ProcessingJob object:")
+              logging.info(f"[REDIS_DEBUG] - Job ID: {job_info['job_id']}")
+              logging.info(f"[REDIS_DEBUG] - Image ID: {job_info['image_id']}")
+              logging.info(f"[REDIS_DEBUG] - Game ID: {job_info['game_id']}")
+              logging.info(f"[REDIS_DEBUG] - Batch ID: {job_info.get('batch_id', 'None')}")
+              logging.info(f"[REDIS_DEBUG] - Filename: {job_info['filename']}")
+              logging.info(f"[REDIS_DEBUG] - Retry: {job_info['retry_count']}/{job_info['max_retries']}")
 
           return ProcessingJob(
               job_id=job_info["job_id"],
@@ -237,21 +291,30 @@ class RedisQueueService(IQueueService):
               game_id=UUID(job_info["game_id"]),
               blob_path=job_info["blob_path"],
               filename=job_info["filename"],
+              batch_id=UUID(job_info["batch_id"]) if job_info.get("batch_id") else None,
               retry_count=job_info["retry_count"],
               max_retries=job_info["max_retries"],
               metadata=job_info["metadata"]
           )
       except redis.TimeoutError:
           # Explicit timeout - normal behavior
+          if settings.debug:
+              logging.info(f"[REDIS_DEBUG] Redis timeout (normal)")
           return None
       except (redis.ConnectionError, redis.RedisError, OSError) as e:
           # Connection error - force reconnection
-          logger.warning(f"Redis: Erreur de connexion: {e}. Forçant la reconnexion...") if settings.debug else None
+          if settings.debug:
+              logging.error(f"[REDIS_DEBUG] Erreur de connexion: {e}. Forçant la reconnexion...")
           self._redis = None
           return None
       except Exception as e:
           # Other error - log but no reconnection
-          logger.error(f"Redis: Erreur inattendue lors du dequeue: {e}") if settings.debug else None
+          if settings.debug:
+              logging.error(f"[REDIS_DEBUG] Erreur inattendue lors du dequeue:")
+              logging.error(f"[REDIS_DEBUG] - Erreur: {str(e)}")
+              logging.error(f"[REDIS_DEBUG] - Type: {type(e).__name__}")
+              import traceback
+              logging.error(f"[REDIS_DEBUG] Stack trace: {traceback.format_exc()}")
           return None
 
   async def close(self) -> None:

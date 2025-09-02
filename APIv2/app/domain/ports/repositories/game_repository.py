@@ -46,3 +46,23 @@ class IGameRepository(ABC):
     @abstractmethod
     async def exists_by_title_publisher_and_user(self, title: str, publisher: Optional[str], created_by: Optional[UUID]) -> bool:
         pass
+
+    @abstractmethod
+    async def get_accessible_games_for_user(self, user_id: UUID, limit: int = 50, offset: int = 0) -> List[Game]:
+        """Get public games + user's private games with pagination"""
+        pass
+
+    @abstractmethod
+    async def count_accessible_games_for_user(self, user_id: UUID) -> int:
+        """Count accessible games for user (for pagination)"""
+        pass
+
+    @abstractmethod
+    async def get_user_games_paginated(self, user_id: UUID, limit: int = 50, offset: int = 0) -> List[Game]:
+        """Get user's own games with pagination"""
+        pass
+
+    @abstractmethod
+    async def count_user_games(self, user_id: UUID) -> int:
+        """Count user's own games (for pagination)"""
+        pass

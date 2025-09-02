@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import List
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -11,16 +12,15 @@ class GameCreationRequest(BaseModel):
     series_id: UUID | None = Field(None, description="Game series ID (optional)")
     is_expansion: bool = Field(False, description="Is expansion ? (optional)")
     base_game_id: UUID | None = Field(None, description="Game base ID (optional)")
-    is_public: bool = Field(..., description="Is public ?")
-    created_by: UUID | None = Field(None, description="Created by user ID (optional)")
+    is_public: bool | None = Field(None, description="Is game public? (admin only)")
+    # created_by est géré côté serveur pour la sécurité
 
     model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "title": "Zombicide",
                 "publisher": "CMON",
-                "description": "A zombie massacre game",
-                "is_public": True
+                "description": "A zombie massacre game"
             }
         }
     )
@@ -48,6 +48,36 @@ class GameResponse(BaseModel):
                 "base_game_id": 1,
                 "is_public": True,
                 "created_by": 1
+            }
+        }
+    )
+
+
+class GamesListResponse(BaseModel):
+    """Schema pour la réponse de liste de jeux avec pagination"""
+    games: List[GameResponse] = Field(..., description="List of accessible games")
+    total_count: int = Field(..., description="Total number of accessible games")
+    limit: int = Field(..., description="Number of games per page")
+    offset: int = Field(..., description="Number of games skipped")
+    has_more: bool = Field(..., description="Whether there are more games to load")
+
+    model_config = ConfigDict(
+        json_schema_extra = {
+            "example": {
+                "games": [
+                    {
+                        "game_id": "uuid-here",
+                        "title": "Zombicide",
+                        "publisher": "CMON",
+                        "description": "A zombie massacre game",
+                        "is_public": True,
+                        "created_by": "user-uuid"
+                    }
+                ],
+                "total_count": 15,
+                "limit": 10,
+                "offset": 0,
+                "has_more": True
             }
         }
     )

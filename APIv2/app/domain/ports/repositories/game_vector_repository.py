@@ -39,6 +39,17 @@ class IGameVectorRepository(ABC):
       pass
 
   @abstractmethod
+  async def search_similar_vectors(
+      self,
+      game_id: UUID,
+      query_embedding: List[float],
+      limit: int = 10,
+      similarity_threshold: float = 0.7
+  ) -> List[GameVector]:
+      """Recherche de vecteurs similaires avec seuil de similarité"""
+      pass
+
+  @abstractmethod
   async def delete(self, vector_id: UUID) -> bool:
       """Supprime un vecteur"""
       pass

@@ -133,13 +133,17 @@ class ImageProcessingWorker:
             logger.info(f"🤖 AI processing result: success={ai_result.success}")
 
             if ai_result.success:
-                logger.info(f"📝 Extracted text: {ai_result.extracted_text[:100]}...")
-                logger.info(f"🖼️ Description: {ai_result.visual_description[:100]}...")
-                logger.info(f"🏷️ Labels: {ai_result.labels}")
-                logger.info(
-                    f"🔢 Text embedding length: {len(ai_result.text_embedding) if ai_result.text_embedding else 0}")
-                logger.info(
-                    f"🔢 Desc embedding length: {len(ai_result.description_embedding) if ai_result.description_embedding else 0}")
+                # Architecture 3-paires : OCR, Description, Labels
+                if ai_result.ocr_content:
+                    logger.info(f"📝 OCR content: {ai_result.ocr_content[:100]}...")
+                if ai_result.description_content:
+                    logger.info(f"🖼️ Description: {ai_result.description_content[:100]}...")
+                if ai_result.labels_content:
+                    logger.info(f"🏷️ Labels: {ai_result.labels_content}")
+                
+                logger.info(f"🔢 OCR embedding length: {len(ai_result.ocr_embedding) if ai_result.ocr_embedding else 0}")
+                logger.info(f"🔢 Description embedding length: {len(ai_result.description_embedding) if ai_result.description_embedding else 0}")
+                logger.info(f"🔢 Labels embedding length: {len(ai_result.labels_embedding) if ai_result.labels_embedding else 0}")
 
             if not ai_result.success:
                 raise ValueError(ai_result.error_message or "AI processing failed")
@@ -214,31 +218,37 @@ class ImageProcessingWorker:
         async with get_session() as session:
             vector_repo = self._vector_repository or GameVectorRepository(session)
 
-            # Créer le vecteur pour le texte extrait
-            if ai_result.extracted_text and ai_result.text_embedding:
-                text_vector = GameVector(
-                    id=uuid4(),
-                    game_id=job.game_id,
-                    image_id=job.image_id,
-                    vector_embedding=ai_result.text_embedding,
-                    extracted_text=ai_result.extracted_text,
-                    page_number=1,  # Pourrait être extrait des métadonnées
-                    created_at=datetime.now(timezone.utc)
-                )
-                await vector_repo.create(text_vector)
-
-            # Créer le vecteur pour la description
-            if ai_result.visual_description and ai_result.description_embedding:
-                desc_vector = GameVector(
-                    id=uuid4(),
-                    game_id=job.game_id,
-                    image_id=job.image_id,
-                    vector_embedding=ai_result.description_embedding,
-                    extracted_text=f"Description: {ai_result.visual_description}\nLabels: {', '.join(ai_result.labels)}",
-                    page_number=1,
-                    created_at=datetime.now(timezone.utc)
-                )
-                await vector_repo.create(desc_vector)
+            # === Architecture 3-paires : Un seul GameVector avec toutes les données ===
+            # Plus de multiple entrées par image - une seule entrée avec toutes les paires
+            
+            vector = GameVector(
+                id=uuid4(),
+                game_id=job.game_id,
+                image_id=job.image_id,
+                
+                # OCR (si disponible)
+                ocr_content=ai_result.ocr_content,
+                ocr_embedding=ai_result.ocr_embedding,
+                
+                # Description (si disponible)
+                description_content=ai_result.description_content,
+                description_embedding=ai_result.description_embedding,
+                
+                # Labels (si disponible)
+                labels_content=ai_result.labels_content,
+                labels_embedding=ai_result.labels_embedding,
+                
+                # Métadonnées
+                page_number=1,  # Pourrait être extrait des métadonnées EXIF
+                created_at=datetime.now(timezone.utc)
+            )
+            
+            # Ne créer que si on a au moins un type de données
+            if ai_result.has_any_data():
+                await vector_repo.create(vector)
+                logger.info(f"✅ Vecteur créé avec types: {', '.join(ai_result.get_extracted_types())}")
+            else:
+                logger.warning("⚠️ Aucune donnée extraite - pas de vecteur créé")
 
             await session.commit()
 

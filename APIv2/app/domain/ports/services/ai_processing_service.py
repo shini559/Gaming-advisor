@@ -5,14 +5,44 @@ from uuid import UUID
 
 @dataclass
 class AIProcessingResult:
-  """Résultat du traitement IA d'une image"""
-  extracted_text: str                    # OCR
-  visual_description: str                # Description des éléments visuels
-  labels: list[str]                      # Tags/labels identifiés
-  text_embedding: list[float]            # Vecteur du texte extrait
-  description_embedding: list[float]     # Vecteur de la description
-  success: bool
+  """
+  Résultat du traitement IA d'une image - Architecture 3-paires
+  Chaque type de contenu a ses données + embedding dédiés
+  """
+  # === OCR (Optical Character Recognition) ===
+  ocr_content: Optional[str] = None
+  ocr_embedding: Optional[list[float]] = None
+  
+  # === Description visuelle ===
+  description_content: Optional[str] = None
+  description_embedding: Optional[list[float]] = None
+  
+  # === Métadonnées/Labels ===
+  labels_content: Optional[str] = None  # JSON string des métadonnées
+  labels_embedding: Optional[list[float]] = None
+  
+  # === Métadonnées globales ===
+  success: bool = True
   error_message: Optional[str] = None
+  
+  def has_any_data(self) -> bool:
+      """Vérifie si au moins un type de données a été extrait"""
+      return bool(
+          self.ocr_content or 
+          self.description_content or 
+          self.labels_content
+      )
+  
+  def get_extracted_types(self) -> list[str]:
+      """Retourne la liste des types de données extraites avec succès"""
+      types = []
+      if self.ocr_content and self.ocr_embedding:
+          types.append("ocr")
+      if self.description_content and self.description_embedding:
+          types.append("description")
+      if self.labels_content and self.labels_embedding:
+          types.append("labels")
+      return types
 
 class IAIProcessingService(ABC):
   """Interface pour le service de traitement IA"""

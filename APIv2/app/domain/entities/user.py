@@ -14,6 +14,7 @@ class User:
     hashed_password: str
     is_active: bool = True
     is_subscribed: bool = False
+    is_admin: bool = False
     credits: int = 0
     avatar: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -28,7 +29,8 @@ class User:
         last_name: str,
         hashed_password: str,
         credits: int = 0,
-        avatar: Optional[str] = None
+        avatar: Optional[str] = None,
+        is_admin: bool = False
     ) -> "User":
         """Create a new user with default values"""
         return cls(
@@ -40,6 +42,7 @@ class User:
             hashed_password=hashed_password,
             is_active=True,
             is_subscribed=False,
+            is_admin=is_admin,
             credits=credits,
             avatar=avatar,
             created_at=datetime.now(timezone.utc),
@@ -50,6 +53,10 @@ class User:
     def full_name(self) -> str:
         """Get user's full name"""
         return f"{self.first_name} {self.last_name}"
+    
+    def can_create_public_games(self) -> bool:
+        """Vérifier si l'utilisateur peut créer des jeux publics"""
+        return self.is_admin and self.is_active
     
     def activate(self) -> None:
         """Activate user account"""

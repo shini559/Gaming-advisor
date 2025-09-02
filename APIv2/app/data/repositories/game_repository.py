@@ -1,7 +1,7 @@
 from typing import Optional, List
 from uuid import UUID
 
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ClauseElement, ColumnElement
 
@@ -58,6 +58,48 @@ class GameRepository(IGameRepository):
         result = await self._session.execute(stmt)
         models = result.scalars().all()
         return [self._model_to_entity(model) for model in models]
+
+    async def get_accessible_games_for_user(self, user_id: UUID, limit: int = 50, offset: int = 0) -> List[Game]:
+        """Get public games + user's private games with pagination"""
+        stmt = select(GameModel).where(
+            or_(
+                GameModel.is_public == True,
+                GameModel.created_by == user_id
+            )
+        ).order_by(GameModel.created_at.desc()).limit(limit).offset(offset)
+        
+        result = await self._session.execute(stmt)
+        models = result.scalars().all()
+        return [self._model_to_entity(model) for model in models]
+
+    async def count_accessible_games_for_user(self, user_id: UUID) -> int:
+        """Count accessible games for user (for pagination)"""
+        stmt = select(func.count(GameModel.id)).where(
+            or_(
+                GameModel.is_public == True,
+                GameModel.created_by == user_id
+            )
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar() or 0
+
+    async def get_user_games_paginated(self, user_id: UUID, limit: int = 50, offset: int = 0) -> List[Game]:
+        """Get user's own games with pagination"""
+        stmt = select(GameModel).where(
+            GameModel.created_by == user_id
+        ).order_by(GameModel.created_at.desc()).limit(limit).offset(offset)
+        
+        result = await self._session.execute(stmt)
+        models = result.scalars().all()
+        return [self._model_to_entity(model) for model in models]
+
+    async def count_user_games(self, user_id: UUID) -> int:
+        """Count user's own games (for pagination)"""
+        stmt = select(func.count(GameModel.id)).where(
+            GameModel.created_by == user_id
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar() or 0
 
     async def get_by_series(self, series_id: UUID) -> List[Game]:
         stmt = select(GameModel).where(GameModel.series_id == series_id).order_by(GameModel.title)

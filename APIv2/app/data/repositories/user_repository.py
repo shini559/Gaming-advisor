@@ -32,6 +32,7 @@ class UserRepository(IUserRepository):
             existing_user.hashed_password = user.hashed_password
             existing_user.is_active = user.is_active
             existing_user.is_subscribed = user.is_subscribed
+            existing_user.is_admin = user.is_admin
             existing_user.credits = user.credits
             existing_user.updated_at = user.updated_at
             user_model = existing_user
@@ -47,6 +48,7 @@ class UserRepository(IUserRepository):
                 hashed_password=user.hashed_password,
                 is_active=user.is_active,
                 is_subscribed=user.is_subscribed,
+                is_admin=user.is_admin,
                 credits=user.credits,
                 created_at=user.created_at,
                 updated_at=user.updated_at
@@ -118,6 +120,7 @@ class UserRepository(IUserRepository):
             hashed_password=user_model.hashed_password,
             is_active=user_model.is_active,
             is_subscribed=user_model.is_subscribed,
+            is_admin=user_model.is_admin,
             credits=user_model.credits,
             created_at=user_model.created_at,
             updated_at=user_model.updated_at

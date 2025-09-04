@@ -6,6 +6,7 @@ import logging
 
 from app.config import settings
 from app.dependencies import get_current_user
+from app.shared.utils.debug_logger import debug_logger
 from app.dependencies.batches import get_create_image_batch_use_case, get_get_batch_status_use_case
 from app.domain.use_cases.images.create_image_batch import CreateImageBatchUseCase, CreateImageBatchRequest
 from app.domain.use_cases.images.get_batch_status import GetBatchStatusUseCase
@@ -41,14 +42,15 @@ async def upload_game_images_batch(
         use_case: CreateImageBatchUseCase = Depends(get_create_image_batch_use_case)
 ) -> BatchUploadResponse:
     """Upload multiple images as a batch"""
-    
+
     # Log de debug : informations de la requête reçue
     if settings.debug:
         logging.info(f"[ENDPOINT_BATCH_DEBUG] Requête batch-upload reçue")
         logging.info(f"[ENDPOINT_BATCH_DEBUG] Game ID: {game_id}")
         logging.info(f"[ENDPOINT_BATCH_DEBUG] User: {current_user.id} (admin: {current_user.is_admin})")
         logging.info(f"[ENDPOINT_BATCH_DEBUG] Nombre de fichiers FastAPI: {len(files) if files else 0}")
-        if files:
+
+        if files and settings.debug:
             filenames = [f.filename for f in files]
             logging.info(f"[ENDPOINT_BATCH_DEBUG] Noms des fichiers: {filenames}")
     
@@ -113,7 +115,7 @@ async def upload_game_images_batch(
                 )
 
         if settings.debug:
-            logging.info(f"[ENDPOINT_BATCH_DEBUG] Succès - Retour HTTP 202")
+           logging.info(f"[ENDPOINT_BATCH_DEBUG] Succès - Retour HTTP 202")
 
         return BatchUploadResponse(
             batch_id=response.batch_id,

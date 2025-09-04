@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 import uvicorn
 from fastapi import FastAPI
@@ -81,6 +82,19 @@ async def lifespan(app: FastAPI):
         await worker_use_case.stop()
         logger.info("Image processing worker stopped")
 
+
+# Configure logging AVANT la création de l'app
+if settings.debug:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler()  # Affiche dans la console
+        ]
+    )
+    # S'assurer que les logs des modules app.* s'affichent
+    logging.getLogger('app').setLevel(logging.INFO)
+    logging.getLogger('uvicorn').setLevel(logging.INFO)
 
 # Create FastAPI app instance
 app = FastAPI(

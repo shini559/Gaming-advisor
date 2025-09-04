@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import List, Dict, Any, Union
 from uuid import UUID
@@ -68,11 +69,18 @@ class GameRulesAgent(IGameRulesAgent):
             response_content, sources, confidence = await self._generate_with_context(context)
             logger.info(f"✅ Réponse générée - Sources: {len(sources)}, Confidence: {confidence}")
             
+            # Créer un JSON complet avec toutes les valeurs de configuration
+            search_method_config = {
+                "search_method": settings.vector_search_method,
+                "send_images": settings.agent_send_images,
+                "content_fields": settings.agent_content_fields
+            }
+            
             return AgentResponse(
                 content=response_content,
                 sources=sources,
                 confidence=confidence,
-                search_method=settings.vector_search_method,  # Méthode de recherche découplée
+                search_method=json.dumps(search_method_config),
                 reasoning=f"Réponse générée avec {len(sources)} source(s) - Recherche: {settings.vector_search_method}, Contenu: {settings.agent_content_fields}, Images: {settings.agent_send_images}"
             )
             
@@ -82,11 +90,18 @@ class GameRulesAgent(IGameRulesAgent):
             import traceback
             logger.error(f"💥 Stack trace: {traceback.format_exc()}")
             
+            # Créer un JSON complet même en cas d'erreur
+            search_method_config = {
+                "search_method": settings.vector_search_method,
+                "send_images": settings.agent_send_images,
+                "content_fields": settings.agent_content_fields
+            }
+            
             return AgentResponse(
                 content="Je rencontre un problème technique. Peux-tu reformuler ta question ?",
                 sources=[],
                 confidence=0.0,
-                search_method=settings.vector_search_method,
+                search_method=json.dumps(search_method_config),
                 reasoning=f"Erreur: {str(e)}"
             )
     

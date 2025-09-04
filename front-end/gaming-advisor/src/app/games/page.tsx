@@ -79,7 +79,7 @@ export default function GamesPage() {
 
               return (
                 <Link
-                  href={`/chat/${game.game_id}?owner=${isOwner}&title=${encodedTitle}`}
+                  href={`/games/${game.game_id}/conversations?title=${encodedTitle}`}
                   key={game.game_id}
                   className="block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors"
                 >

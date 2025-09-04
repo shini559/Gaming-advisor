@@ -1,4 +1,3 @@
-// src/app/account/page.tsx
 "use client";
 
 import { useState, useEffect, FormEvent } from 'react';
@@ -74,12 +73,12 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-gray-900 p-6 sm:p-8 flex items-center justify-center">
       <div className="max-w-3xl w-full mx-auto space-y-8">
-        {/* Header (reprise de celui du chat pour la cohérence) */}
+        {/* Header  */}
         <header className="bg-gray-900 border-b border-b-gray-900 shadow-md fixed top-0 left-0 right-0 z-10">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     {/* On utilise flex et justify-center pour centrer le titre */}
     <div className="flex justify-center items-center h-16">
-      <Link href="/chat" title="Retour au Chat">
+      <Link href="/games" title="Retour au Chat">
         <h1 className="text-xl font-bold text-gray-100 cursor-pointer hover:text-gray-300 transition-colors">
           Gaming Advisor
         </h1>
@@ -88,7 +87,7 @@ export default function AccountPage() {
   </div>
 </header>
 
-        <div className="pt-24"> {/* Padding pour éviter que le contenu ne passe sous le header fixe */}
+        <div className="pt-24">
             <h1 className="text-4xl font-extrabold text-white text-center mb-10">Mon Compte</h1>
 
             {/* Section 1: Informations du Profil */}
@@ -143,7 +142,16 @@ export default function AccountPage() {
               </form>
             </div>
         </div>
+        {/* footer */}
+      <footer className="w-full bg-gray-900 border-t border-gray-800 py-6">
+        <div className="max-w-4xl mx-auto flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-sm text-gray-400">
+          <Link href="/legal" className="hover:text-white transition-colors">Mentions légales</Link>
+          <Link href="/privacy" className="hover:text-white transition-colors">Politique de confidentialité</Link>
+          <Link href="/terms" className="hover:text-white transition-colors">Conditions d'utilisation</Link>
+        </div>
+      </footer>
       </div>
+
     </div>
   );
 }

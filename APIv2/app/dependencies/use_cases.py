@@ -5,7 +5,7 @@ from app.dependencies.repositories import (
   get_user_session_repository,
   get_chat_conversation_repository, get_chat_message_repository, get_chat_feedback_repository
 )
-from app.dependencies.services import get_password_service, get_jwt_service, get_game_rules_agent, get_conversation_history_service
+from app.dependencies.services import get_password_service, get_jwt_service, get_game_rules_agent, get_conversation_history_service, get_blob_storage_service
 from app.domain.ports.repositories.user_session_repository import IUserSessionRepository
 from app.domain.ports.services.jwt_service import IJWTService
 from app.domain.ports.services.password_service import IPasswordService
@@ -37,6 +37,7 @@ from app.domain.ports.repositories.chat_message_repository import IChatMessageRe
 from app.domain.ports.repositories.chat_feedback_repository import IChatFeedbackRepository
 from app.domain.ports.services.game_rules_agent import IGameRulesAgent
 from app.domain.ports.services.conversation_history_service import IConversationHistoryService
+from app.domain.ports.services.blob_storage_service import IBlobStorageService
 
 
 # Auth Use Cases
@@ -76,9 +77,10 @@ def get_logout_user_use_case(
 
 # Game Use Cases
 def get_create_game_use_case(
-  game_repo: IGameRepository = Depends(get_game_repository)
+  game_repo: IGameRepository = Depends(get_game_repository),
+  blob_storage_service: IBlobStorageService = Depends(get_blob_storage_service)
 ) -> CreateGameUseCase:
-  return CreateGameUseCase(game_repo)
+  return CreateGameUseCase(game_repo, blob_storage_service)
 
 
 def get_get_game_use_case(
@@ -94,9 +96,10 @@ def get_list_games_use_case(
 
 
 def get_update_game_use_case(
-  game_repo: IGameRepository = Depends(get_game_repository)
+  game_repo: IGameRepository = Depends(get_game_repository),
+  blob_storage_service: IBlobStorageService = Depends(get_blob_storage_service)
 ) -> UpdateGameUseCase:
-  return UpdateGameUseCase(game_repo)
+  return UpdateGameUseCase(game_repo, blob_storage_service)
 
 
 def get_delete_game_use_case(

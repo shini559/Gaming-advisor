@@ -24,7 +24,8 @@ class GameRepository(IGameRepository):
             is_expansion=game.is_expansion,
             base_game_id=game.base_game_id,
             is_public=game.is_public,
-            created_by=game.created_by
+            created_by=game.created_by,
+            avatar=game.avatar
         )
         self._session.add(model)
         await self._session.flush()
@@ -146,6 +147,7 @@ class GameRepository(IGameRepository):
         model.is_expansion = game.is_expansion
         model.base_game_id = game.base_game_id
         model.is_public = game.is_public
+        model.avatar = game.avatar
 
         await self._session.flush()
         return self._model_to_entity(model)
@@ -171,6 +173,7 @@ class GameRepository(IGameRepository):
             base_game_id=model.base_game_id,
             is_public=model.is_public,
             created_by=model.created_by,
+            avatar=model.avatar,
             created_at=model.created_at,
             updated_at=model.updated_at
         )

@@ -62,6 +62,7 @@ export default function ChatPage() {
       if (convResponse.ok && conversationsData.conversations.length > 0) {
         // Cas A : Une conversation existe
         currentConversationId = conversationsData.conversations[0].id;
+        console.log("conv exist currentconvid : ",currentConversationId)
         setConversationId(currentConversationId);
       } else {
         // Cas B : On en crée une nouvelle
@@ -72,6 +73,7 @@ export default function ChatPage() {
         const newConversation = await createConvResponse.json();
         if (!createConvResponse.ok) throw new Error('Impossible de créer une conversation.');
         currentConversationId = newConversation.id;
+        console.log("conv not exist currentconvid : ",currentConversationId)
         setConversationId(currentConversationId);
       }
 

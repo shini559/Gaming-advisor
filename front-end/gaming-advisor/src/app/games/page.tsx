@@ -74,6 +74,7 @@ export default function GamesPage() {
       {games.map((game) => {
         // On détermine si l'utilisateur est le propriétaire
         const isOwner = game.created_by === userId;
+        const gameImage = game.avatar;
         const encodedTitle = encodeURIComponent(game.title);
         const href = `/chat/${game.game_id}?owner=${isOwner}&title=${encodedTitle}`;
 
@@ -82,12 +83,19 @@ export default function GamesPage() {
           <Link
               href={`/chat/${game.game_id}?owner=${isOwner}&title=${encodedTitle}`}
             key={game.game_id}
-            className="block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors"
+            style={{ backgroundImage: `url(${gameImage})` }}
+            className="relative block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors bg-center bg-cover bg-opacity-0.6"
           >
-            <h2 className="text-xl font-bold mb-2">{game.title}</h2>
-            <p className={`text-sm ${game.is_public ? 'text-teal-400' : 'text-amber-400'}`}>
-              {game.is_public ? 'Jeu Public' : 'Votre jeu privé'}
-            </p>
+
+            <div className="absolute inset-0 bg-black/60" />
+
+
+            <div className="relative z-10">
+              <h2 className="text-xl font-bold mb-2">{game.title}</h2>
+              <p className={`text-sm ${game.is_public ? 'text-teal-400' : 'text-amber-400'}`}>
+                {game.is_public ? 'Jeu Public' : 'Votre jeu privé'}
+              </p>
+            </div>
           </Link>
         );
       })}

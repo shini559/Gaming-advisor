@@ -22,6 +22,7 @@ class GameModel(Base):
     base_game_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey('games.id'), nullable=True)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
     created_by: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey('users.id'), nullable=True)
+    avatar: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
 

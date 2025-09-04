@@ -21,6 +21,7 @@ type UploadStatus = {
 };
 
 export default function ChatPage() {
+  const initialized = useRef(false);
   // --- HOOKS ---
   const router = useRouter();
   const params = useParams();
@@ -48,24 +49,37 @@ export default function ChatPage() {
       return;
     }
 
-    const initializeConversation = async () => {
-      try {
-        const { response: convResponse } = await fetchWithAuth(`https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/games/${gameId}/conversations`);
-        const conversationsData = await convResponse.json();
-        let currentConvId: string | null = null;
-
-        if (convResponse.ok && conversationsData.conversations.length > 0) {
-          currentConvId = conversationsData.conversations[0].id;
-        } else {
-          const { response: createConvResponse } = await fetchWithAuth('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/conversations', {
-            method: 'POST',
-            body: JSON.stringify({ game_id: gameId, title: gameTitle }),
-          });
-          const newConversation = await createConvResponse.json();
-          if (!createConvResponse.ok) throw new Error('Impossible de créer une conversation.');
-          currentConvId = newConversation.id;
+    if (initialized.current) {
+            return;
         }
-        setConversationId(currentConvId);
+        initialized.current = true;
+
+        const initializeConversation = async () => {
+            try {
+                let currentConvId: string | null = null;
+
+                // 1. On cherche les conversations existantes
+                const { response: getConvResponse } = await fetchWithAuth(`https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/games/${gameId}/conversations`);
+                const existingConvsData = await getConvResponse.json();
+
+                if (getConvResponse.ok && existingConvsData.conversations && existingConvsData.conversations.length > 0) {
+                    // Si on trouve un tableau de conversations, on prend le premier ID
+                    currentConvId = existingConvsData.conversations[0].id;
+                } else {
+                    // Sinon, on en crée une nouvelle
+                    const { response: createConvResponse } = await fetchWithAuth('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/conversations', {
+                        method: 'POST',
+                        body: JSON.stringify({ game_id: gameId, title: gameTitle }),
+                    });
+                    const newConvData = await createConvResponse.json();
+
+                    if (!createConvResponse.ok) {
+                        throw new Error('Impossible de créer la conversation.');
+                    }
+                    currentConvId = newConvData.conversation.id;
+                }
+
+                setConversationId(currentConvId);
 
         if (currentConvId) {
           const { response: historyResponse } = await fetchWithAuth(`https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/conversations/${currentConvId}/history`);

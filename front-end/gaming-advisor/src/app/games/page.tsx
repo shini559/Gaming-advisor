@@ -58,44 +58,43 @@ export default function GamesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Sélectionnez un jeu</h1>
-          <Link
-            href="/games/create"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Créer un nouveau jeu
-          </Link>
+    // On utilise une div parente pour positionner le footer en bas
+    <div className="flex flex-col min-h-screen bg-gray-900 text-white">
+      <main className="flex-grow p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Sélectionnez un jeu</h1>
+            <Link
+              href="/games/create"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              Créer un nouveau jeu
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {games.map((game) => {
+              const isOwner = game.created_by === userId;
+              const encodedTitle = encodeURIComponent(game.title);
+
+              return (
+                <Link
+                  href={`/chat/${game.game_id}?owner=${isOwner}&title=${encodedTitle}`}
+                  key={game.game_id}
+                  className="block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors"
+                >
+                  <h2 className="text-xl font-bold mb-2">{game.title}</h2>
+                  <p className={`text-sm ${game.is_public ? 'text-teal-400' : 'text-amber-400'}`}>
+                    {game.is_public ? 'Jeu Public' : 'Votre jeu privé'}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
         </div>
+      </main>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {games.map((game) => {
-        // On détermine si l'utilisateur est le propriétaire
-        const isOwner = game.created_by === userId;
-        const encodedTitle = encodeURIComponent(game.title);
-        const href = `/chat/${game.game_id}?owner=${isOwner}&title=${encodedTitle}`;
-
-
-        return (
-          <Link
-              href={`/chat/${game.game_id}?owner=${isOwner}&title=${encodedTitle}`}
-            key={game.game_id}
-            className="block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors"
-          >
-            <h2 className="text-xl font-bold mb-2">{game.title}</h2>
-            <p className={`text-sm ${game.is_public ? 'text-teal-400' : 'text-amber-400'}`}>
-              {game.is_public ? 'Jeu Public' : 'Votre jeu privé'}
-            </p>
-          </Link>
-        );
-      })}
-
-    </div>
-
-      </div>
-      {/* footer */}
+      {/* Le pied de page */}
       <footer className="w-full bg-gray-900 border-t border-gray-800 py-6">
         <div className="max-w-4xl mx-auto flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-sm text-gray-400">
           <Link href="/legal" className="hover:text-white transition-colors">Mentions légales</Link>

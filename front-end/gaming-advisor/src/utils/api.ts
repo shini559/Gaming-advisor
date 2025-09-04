@@ -3,7 +3,7 @@ async function refreshToken() {
   if (!refreshToken) {
     // Si pas de refresh token, on ne peut rien faire, l'utilisateur doit se reconnecter
     console.error('No refresh token found');
-    // On pourrait ici rediriger vers la page de login
+    // On redirige vers la page de login
     window.location.href = '/login';
     return null;
   }
@@ -41,7 +41,7 @@ async function refreshToken() {
   }
 }
 
-// Notre nouvelle fonction "fetch" intelligente
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let accessToken = localStorage.getItem('access_token');
   let refreshed = false;
@@ -50,7 +50,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   options.headers = {
     ...options.headers,
     'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json', // On suppose JSON par défaut
+    'Content-Type': 'application/json',
   };
 
   // On fait le premier appel
@@ -75,4 +75,40 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   }
 
   return { response, refreshed };
+}
+export async function uploadFileWithAuth(url: string, files: FileList) {
+  const formData = new FormData();
+
+  // On boucle sur les fichiers et on les ajoute tous avec la même clé "files"
+  for (let i = 0; i < files.length; i++) {
+    formData.append('files', files[i]);
+  }
+
+  let accessToken = localStorage.getItem('access_token');
+  const headers = {
+    'Authorization': `Bearer ${accessToken}`,
+  };
+
+  let response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    console.log('Access token expired. Refreshing...');
+    const newAccessToken = await refreshToken();
+
+    if (newAccessToken) {
+      headers['Authorization'] = `Bearer ${newAccessToken}`;
+      console.log('Retrying the upload with new token...');
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    }
+  }
+
+  return response;
 }

@@ -39,6 +39,28 @@ class IBlobStorageService(ABC):
       pass
 
   @abstractmethod
+  async def upload_game_avatar(
+      self,
+      game_id: UUID,
+      file_content: bytes,
+      filename: str,
+      content_type: str
+  ) -> tuple[str, str]:
+      """
+      Upload un avatar de jeu dans Azure Blob Storage
+      
+      Args:
+          game_id: ID du jeu
+          file_content: Contenu du fichier avatar
+          filename: Nom du fichier original
+          content_type: Type MIME du fichier
+      
+      Returns:
+          tuple[file_path, blob_url] - Le path interne et l'URL publique
+      """
+      pass
+
+  @abstractmethod
   async def close(self):
       """Ferme proprement la connexion Azure"""
       pass

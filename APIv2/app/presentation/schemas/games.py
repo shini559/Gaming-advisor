@@ -36,6 +36,7 @@ class GameResponse(BaseModel):
     base_game_id: UUID | None = Field(None, description="Game base ID (optional)")
     is_public: bool = Field(..., description="Is public ?")
     created_by: UUID | None = Field(None, description="Created by user ID (optional)")
+    avatar: str | None = Field(None, description="URL of game avatar image (optional)")
 
     model_config = ConfigDict(
         json_schema_extra = {

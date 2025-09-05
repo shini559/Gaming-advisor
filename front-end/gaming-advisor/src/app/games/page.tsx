@@ -58,7 +58,6 @@ export default function GamesPage() {
   }
 
   return (
-    // On utilise une div parente pour positionner le footer en bas
     <div className="flex flex-col min-h-screen bg-gray-900 text-white">
       <main className="flex-grow p-8">
         <div className="max-w-4xl mx-auto">
@@ -75,18 +74,25 @@ export default function GamesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {games.map((game) => {
               const isOwner = game.created_by === userId;
+              const gameImage = game.avatar;
               const encodedTitle = encodeURIComponent(game.title);
 
               return (
                 <Link
                   href={`/games/${game.game_id}/conversations?title=${encodedTitle}`}
                   key={game.game_id}
-                  className="block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors"
+                  style={{ backgroundImage: `url(${gameImage})` }}
+                  className="relative block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors bg-center bg-cover"
                 >
-                  <h2 className="text-xl font-bold mb-2">{game.title}</h2>
-                  <p className={`text-sm ${game.is_public ? 'text-teal-400' : 'text-amber-400'}`}>
-                    {game.is_public ? 'Jeu Public' : 'Votre jeu privé'}
-                  </p>
+
+                  <div className="absolute inset-0 bg-black/60" />
+
+                  <div className="relative z-10">
+                    <h2 className="text-xl font-bold mb-2">{game.title}</h2>
+                    <p className={`text-sm ${game.is_public ? 'text-teal-400' : 'text-amber-400'}`}>
+                      {game.is_public ? 'Jeu Public' : 'Votre jeu privé'}
+                    </p>
+                  </div>
                 </Link>
               );
             })}

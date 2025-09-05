@@ -16,5 +16,6 @@ class Game:
     base_game_id: UUID | None
     is_public: bool
     created_by: UUID | None
+    avatar: str | None  # URL de l'image d'avatar stockée dans Azure Blob Storage
     created_at: datetime
     updated_at: datetime

@@ -111,6 +111,46 @@ class AzureBlobStorageService(IBlobStorageService):
       except Exception:
           return None
 
+  async def upload_game_avatar(
+      self,
+      game_id: UUID,
+      file_content: bytes,
+      filename: str,
+      content_type: str
+  ) -> tuple[str, str]:
+      """Upload un avatar de jeu dans Azure Blob Storage"""
+      
+      # Structure: game_images/{game_id}/avatar_{filename}
+      file_path = f"game_images/{game_id}/avatar_{filename}"
+      
+      # Obtenir le container client
+      container_client = self.client.get_container_client(settings.azure_blob_container_name)
+      
+      # Upload du fichier
+      blob_client = container_client.get_blob_client(file_path)
+      
+      try:
+          # Upload avec métadonnées
+          await blob_client.upload_blob(
+              file_content,
+              blob_type="BlockBlob",
+              content_type=content_type,
+              metadata={
+                  "game_id": str(game_id),
+                  "type": "avatar",
+                  "original_filename": filename
+              },
+              overwrite=True  # Remplace l'avatar existant si il y en a un
+          )
+          
+          # Générer l'URL publique
+          blob_url = blob_client.url
+          
+          return file_path, blob_url
+          
+      except Exception as e:
+          raise ValueError(f"Failed to upload avatar for game {game_id}: {str(e)}")
+
   async def close(self):
       """Ferme proprement la connexion Azure"""
       if self._client:

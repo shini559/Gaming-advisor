@@ -34,9 +34,9 @@ async def create_game(
   title: str = Form(..., description="Game title"),
   publisher: Optional[str] = Form(None, description="Game publisher"),
   description: Optional[str] = Form(None, description="Game description"),
-  series_id: Optional[UUID] = Form(None, description="Game series ID"),
+  series_id: Optional[str] = Form(None, description="Game series ID (optional)"),
   is_expansion: bool = Form(False, description="Is this an expansion"),
-  base_game_id: Optional[UUID] = Form(None, description="Base game ID if expansion"),
+  base_game_id: Optional[str] = Form(None, description="Base game ID if expansion"),
   is_public: Optional[bool] = Form(None, description="Is game public (admin only)"),
   avatar: Optional[UploadFile] = File(None, description="Game avatar image"),
   current_user: User = Depends(get_current_user),
@@ -68,14 +68,35 @@ async def create_game(
           
           avatar_filename = avatar.filename
       
+      # Nettoyer et valider les champs UUID optionnels
+      def clean_uuid_field(value: Optional[str]) -> Optional[UUID]:
+          """Convertit chaîne vide en None, ou parse l'UUID si valide"""
+          if not value or value.strip() == "":
+              return None
+          try:
+              return UUID(value.strip())
+          except ValueError:
+              raise HTTPException(
+                  status_code=status.HTTP_400_BAD_REQUEST,
+                  detail=f"Invalid UUID format: {value}"
+              )
+      
+      # Nettoyer les UUIDs
+      cleaned_series_id = clean_uuid_field(series_id)
+      cleaned_base_game_id = clean_uuid_field(base_game_id)
+      
+      # Règle métier: si is_expansion=False, alors base_game_id doit être None
+      if not is_expansion:
+          cleaned_base_game_id = None
+      
       # Convertir en requête use case
       use_case_request = CreateGameRequest(
           title=title,
           publisher=publisher,
           description=description,
-          series_id=series_id,
+          series_id=cleaned_series_id,
           is_expansion=is_expansion,
-          base_game_id=base_game_id,
+          base_game_id=cleaned_base_game_id,
           is_public=is_public,
           created_by=current_user.id,
           user_is_admin=current_user.is_admin,
@@ -295,7 +316,7 @@ async def update_game(
         # Validation et traitement de l'avatar
         avatar_content = None
         avatar_filename = None
-        
+
         if avatar:
             # Validation du type de fichier
             allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]

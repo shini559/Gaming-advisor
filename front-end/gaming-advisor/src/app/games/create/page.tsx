@@ -12,6 +12,7 @@ export default function CreateGamePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [publisher, setPublisher] = useState('');
+  const [avatar, setAvatar] = useState<File | null>(null);
 
   // États pour la logique de la page
   const [isVerified, setIsVerified] = useState(false);
@@ -34,14 +35,22 @@ export default function CreateGamePage() {
     setMessage('');
 
     try {
-      const { response } = await fetchWithAuth('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/games/create', {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('publisher', publisher);
+      formData.append('is_public', 'false');
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+
+      let accessToken = localStorage.getItem('access_token');
+      const response = await fetch('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/games/create', {
         method: 'POST',
-        body: JSON.stringify({
-          title,
-          description,
-          publisher,
-          is_public: false,
-        }),
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: formData,
       });
 
       const data = await response.json();
@@ -108,6 +117,16 @@ export default function CreateGamePage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="avatar" className="block text-sm font-medium text-gray-300">Avatar du jeu</label>
+              <input
+                id="avatar"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setAvatar(e.target.files?.[0] || null)}
+                className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
               />
             </div>
             <div>

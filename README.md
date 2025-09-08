@@ -17,8 +17,7 @@ Le projet suit une **architecture Clean/Hexagonale** avec séparation claire des
 ```
 Gaming-advisor/
 ├── 📁 prototype/          # Prototype initial Streamlit + LangChain
-├── 📁 API/                # Première version API (Legacy)
-├── 📁 APIv2/              # API principale (Clean Architecture)
+├── 📁 API/                # API (Clean Architecture)
 │   ├── 📁 app/
 │   │   ├── 📁 domain/     # Entités métier et ports
 │   │   ├── 📁 data/       # Modèles SQL et repositories
@@ -31,7 +30,7 @@ Gaming-advisor/
 
 ## 🚀 Technologies Utilisées
 
-### Backend (APIv2)
+### Backend (API)
 - **Framework** : FastAPI 0.115+ (Python asyncio)
 - **Architecture** : Domain Driven Design (DDD) + Clean Architecture
 - **Base de données** : PostgreSQL avec extension pgvector
@@ -111,11 +110,11 @@ git clone &lt;repository-url&gt;
 cd Gaming-advisor
 
 # Configurer les variables d'environnement
-cp APIv2/.env.example APIv2/.env
+cp API.env.example API.env
 # Éditer APIv2/.env avec vos clés API
 
 # Lancer l'API avec Docker
-cd APIv2
+cd API
 docker-compose up -d
 
 # L'API sera disponible sur http://localhost:8000
@@ -123,9 +122,9 @@ docker-compose up -d
 
 ### 🔧 Installation Développement
 
-#### Backend (APIv2)
+#### Backend
 ```bash
-cd APIv2
+cd API
 
 # Créer environnement virtuel
 python -m venv .venv
@@ -172,42 +171,57 @@ streamlit run main.py
 
 ## 📋 Variables d'Environnement
 
-### APIv2/.env
+### API/.env
 ```env
-# Base de données
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=gameadvisor
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4-vision-preview
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-
-# Azure Storage
-AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;...
-AZURE_STORAGE_CONTAINER_NAME=gameadvisor-images
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# JWT
-JWT_SECRET_KEY=your-super-secret-jwt-key
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# API
+# API Configuration
+API_TITLE=GameAdvisor API v2
+API_VERSION=2.0.0
 DEBUG=true
+
+# Server Configuration
 HOST=0.0.0.0
 PORT=8000
+
+# Database Configuration (Azure PostgreSQL)
+DB_HOST=your-azure-postgres-server.postgres.database.azure.com
+DB_PORT=5432
+DB_NAME=gameadvisor
+DB_USERNAME=your-username
+DB_PASSWORD=your-password
+DB_SSL_MODE=require
+
+# JWT Configuration
+JWT_SECRET_KEY=your-super-secret-jwt-key-256-bits-minimum
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=240
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Azure Blob Storage
+AZURE_STORAGE_CONNECTION_STRING="YourConnectionString"
+AZURE_STORAGE_ACCOUNT=ACCOUNT
+AZURE_STORAGE_KEY=KEY
+AZURE_BLOB_CONTAINER_NAME=NAME
+
+# Redis
+REDIS_URL=URL
+
+REDIS_HOST=HOST
+REDIS_PORT=6380
+REDIS_PASSWORD=PASSWORD
+REDIS_SSL=true
+
+# OpenAI
+AZURE_OPENAI_API_KEY=KEY
+AZURE_OPENAI_ENDPOINT=ENDPOINT
+AZURE_OPENAI_VISION_DEPLOYMENT=MODEL
+AZURE_OPENAI_VISION_API_VERSION=MODEL
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT=MODEL
+AZURE_OPENAI_EMBEDDING_API_VERSION=VERSION
 ```
 
 ## 🧪 Tests
 
 ```bash
-cd APIv2
+cd API
 
 # Tests unitaires
 pytest tests/domain/
@@ -298,52 +312,9 @@ docker push your-registry/gameadvisor-api:latest
 az containerapp update --name gameadvisor-api --resource-group rg-gameadvisor --image your-registry/gameadvisor-api:latest
 ```
 
-## 🛣️ Roadmap
-
-### Version 1.0 (Actuelle)
-- ✅ Architecture Clean + DDD
-- ✅ Authentification JWT
-- ✅ Upload et traitement d'images
-- ✅ Agent IA conversationnel
-- ✅ Interface utilisateur moderne
-
-### Version 1.1 (En cours)
-- 🔄 Optimisation performances RAG
-- 🔄 Cache intelligent requêtes similaires  
-- 🔄 Monitoring avancé + métriques
-- 🔄 Support multilingue (EN/FR)
-
-### Version 2.0 (Planifiée)
-- 🔮 Mode collaboratif multi-joueurs
-- 🔮 Intégration BoardGameGeek API
-- 🔮 Suggestions automatiques de jeux
-- 🔮 Mode offline avec cache local
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/amazing-feature`)
-3. Commit les changements (`git commit -m 'Add amazing feature'`)
-4. Push vers la branche (`git push origin feature/amazing-feature`)
-5. Ouvrir une Pull Request
-
-### Standards de Code
-- **Python** : Black + isort + flake8
-- **TypeScript** : ESLint + Prettier
-- **Tests** : Couverture minimale 80%
-- **Documentation** : Docstrings obligatoires pour fonctions publiques
-
 ## 📄 Licence
 
 Ce projet est sous licence [MIT](LICENSE).
-
-## 🙏 Remerciements
-
-- [OpenAI](https://openai.com) pour les modèles GPT-4 Vision et embeddings
-- [FastAPI](https://fastapi.tiangolo.com) pour le framework backend moderne
-- [Next.js](https://nextjs.org) pour l'écosystème React avancé
-- [pgvector](https://github.com/pgvector/pgvector) pour la recherche vectorielle PostgreSQL
-- La communauté boardgaming pour l'inspiration ! 🎲
 
 ---
 

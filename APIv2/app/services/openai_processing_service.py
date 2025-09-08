@@ -38,7 +38,7 @@ class OpenAIProcessingService(IAIProcessingService):
           image_content: BinaryIO,
           filename: str
   ) -> AIProcessingResult:
-      """Traite une image avec OpenAI : OCR + description + vectorisation"""
+      """Traite une image avec OpenAI"""
 
       try:
           # Préparer l'image pour OpenAI

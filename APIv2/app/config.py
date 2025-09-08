@@ -76,8 +76,8 @@ class Settings(BaseSettings):
 
     # AI search methods
     vector_search_method: str = "description"  # "ocr" | "description" | "labels"  /  Used for similarity search
-    agent_send_images: bool = True # Send images for the selected vectors to the agent
-    agent_content_fields: List[str] = ["ocr"]  # ["ocr", "description", "labels"] - multi-sélection / Text fields sent to the agent
+    agent_send_images: bool = False # Send images for the selected vectors to the agent
+    agent_content_fields: List[str] = ["ocr", "description"]  # ["ocr", "description", "labels"] - multi-sélection / Text fields sent to the agent
 
     # AI Processing Prompts
     ocr_prompt: str = """Extracte tout le texte visible dans cette image de règles de jeu de société.

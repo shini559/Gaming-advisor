@@ -55,7 +55,7 @@ class ImageProcessingWorker:
 
 
     async def start(self):
-        """Démarre le worker en mode continu"""
+        """Démarre le worker"""
         self.running = True
         logger.info("Image processing worker started")
 
@@ -67,7 +67,7 @@ class ImageProcessingWorker:
                 await asyncio.sleep(5)  # Pause en cas d'erreur
 
     async def stop(self) -> None:
-        """Arrête le worker proprement"""
+        """Arrête le worker"""
         self.running = False
         await self.queue_service.close()
         await self.blob_service.close()
@@ -79,7 +79,6 @@ class ImageProcessingWorker:
         job = await self.queue_service.dequeue_job()
         if not job:
             if settings.debug:
-                # En mode debug séquentiel, on indique qu'on attend
                 logger.info("[JOB_DEBUG] No job available, waiting...")
             return
 
@@ -95,10 +94,8 @@ class ImageProcessingWorker:
             await self.queue_service.mark_job_processing(job.job_id)
             if settings.debug:
                 logger.info(f"[JOB_DEBUG] ÉTAPE 1/5: ✅ Job marqué comme en cours")
-
-            # Traiter la tâche
-            if settings.debug:
                 logger.info(f"[JOB_DEBUG] ÉTAPE 2/5: Début du traitement de l'image...")
+            # Traiter la tâche
             await self._process_image_job(job)
             if settings.debug:
                 logger.info(f"[JOB_DEBUG] ÉTAPE 2/5: ✅ Traitement de l'image terminé")

@@ -38,7 +38,7 @@ export default function ChatPage() {
     const loadChatHistory = async () => {
       setIsLoading(true);
       try {
-        const { response } = await fetchWithAuth(`https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/conversations/${conversationId}/history`);
+        const { response } = await fetchWithAuth(`https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/chat/conversations/${conversationId}/history?limit=100`);
         if (!response.ok) throw new Error("Impossible de charger l'historique de la conversation.");
 
         const historyData = await response.json();
@@ -151,8 +151,8 @@ export default function ChatPage() {
               </div>
               {message.sender === 'bot' && (
                 <div className="flex justify-start mt-2 ml-2 space-x-2">
-                  <button onClick={() => handleFeedback(message.id, 'positive')} disabled={!!message.feedback} className={`p-1 rounded-full ${message.feedback === 'positive' ? 'text-indigo-400' : 'text-gray-500 hover:text-indigo-400'}`}><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.562 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.821 2.333l-.414.622a2 2 0 00-.342 1.258V10.333z" /></svg></button>
-                  <button onClick={() => handleFeedback(message.id, 'negative')} disabled={!!message.feedback} className={`p-1 rounded-full ${message.feedback === 'negative' ? 'text-red-400' : 'text-gray-500 hover:text-red-400'}`}><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.106-1.79l-.05-.025A4 4 0 0011.057 2H5.642a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.438 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.821-2.333l.414-.622a2 2 0 00.342-1.258V9.667z" /></svg></button>
+                  <button onClick={() => handleFeedback(message.id, 'positive')} disabled={message.feedback === 'positive'} className={`p-1 rounded-full ${message.feedback === 'positive' ? 'text-indigo-400 cursor-not-allowed' : 'text-gray-500 hover:text-indigo-400'}`}><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.562 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.821 2.333l-.414.622a2 2 0 00-.342 1.258V10.333z" /></svg></button>
+                  <button onClick={() => handleFeedback(message.id, 'negative')} disabled={message.feedback === 'negative'} className={`p-1 rounded-full ${message.feedback === 'negative' ? 'text-red-400 cursor-not-allowed' : 'text-gray-500 hover:text-red-400'}`}><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.106-1.79l-.05-.025A4 4 0 0011.057 2H5.642a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.438 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.821-2.333l.414.622a2 2 0 00.342-1.258V9.667z" /></svg></button>
                 </div>
               )}
             </div>

@@ -1,1 +1,0 @@
-# Domaine User - Adapters

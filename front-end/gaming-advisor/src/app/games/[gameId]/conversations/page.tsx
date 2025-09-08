@@ -16,6 +16,7 @@ export default function ConversationsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const gameId = params.gameId as string;
+  const isOwner = searchParams.get('owner') === 'true';
   const gameTitle = searchParams.get('title') ? decodeURIComponent(searchParams.get('title')!) : 'ce jeu';
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -81,7 +82,7 @@ export default function ConversationsPage() {
           {conversations.length > 0 ? (
             conversations.map((conv) => (
               <Link
-                href={`/chat/${conv.id}`}
+                href={`/chat/${conv.id}?gameId=${gameId}&owner=${isOwner}`}
                 key={conv.id}
                 className="block p-6 bg-gray-800 rounded-lg shadow-lg border border-gray-700 hover:border-indigo-500 transition-colors"
               >

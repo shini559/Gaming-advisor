@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, FormEvent, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { fetchWithAuth } from '@/utils/api';
+import {useRouter, useParams, useSearchParams} from 'next/navigation';
+import { fetchWithAuth, uploadFileWithAuth} from '@/utils/api';
 import Link from 'next/link';
 
 // --- TYPES ---
@@ -13,17 +13,30 @@ type Message = {
   feedback?: 'positive' | 'negative' | null;
 };
 
+type UploadStatus = {
+  status: 'processing' | 'completed' | 'failed';
+  progress: number;
+  totalImages?: number;
+  imageUrls?: string[];
+};
+
 export default function ChatPage() {
   // --- HOOKS ---
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const conversationId = params.conversationId as string;
+  const gameId = searchParams.get('gameId');
+  const isUserOwner = searchParams.get('owner') === 'true';
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   // --- ÉTATS ---
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, UploadStatus>>({});
 
   // --- EFFETS ---
   useEffect(() => {
@@ -114,6 +127,58 @@ export default function ChatPage() {
       setMessages(prev => prev.map(msg => msg.id === messageId ? { ...msg, feedback: null } : msg));
     }
   };
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      const uploadUrl = `https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/images/games/${gameId}/batch-upload`;
+      const response = await uploadFileWithAuth(uploadUrl, files);
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.detail || "Erreur lors de l'envoi.");
+
+      const batchId = data.batch_id;
+      setUploadProgress(prev => ({ ...prev, [batchId]: { status: 'processing', progress: 0, totalImages: files.length } }));
+      pollBatchStatus(batchId);
+    } catch (err: any) {
+      console.error("L'envoi a échoué:", err.message);
+    }
+  };
+
+  const pollBatchStatus = (batchId: string) => {
+    const intervalId = setInterval(async () => {
+      try {
+        const { response } = await fetchWithAuth(`https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/images/batches/${batchId}/status`);
+        const data = await response.json();
+        if (response.ok) {
+          setUploadProgress(prev => {
+            const currentBatch = prev[batchId];
+            return {
+              ...prev,
+              [batchId]: {
+                ...currentBatch,
+                status: data.status,
+                progress: data.completion_percentage,
+                imageUrls: data.status === 'completed' ? data.image_urls : currentBatch.imageUrls,
+              },
+            };
+          });
+          if (data.status === 'completed' || data.status === 'failed') {
+            clearInterval(intervalId);
+          }
+        } else {
+          clearInterval(intervalId);
+          setUploadProgress(prev => ({ ...prev, [batchId]: { ...prev[batchId], status: 'failed' } }));
+        }
+      } catch (error) {
+        clearInterval(intervalId);
+        setUploadProgress(prev => ({ ...prev, [batchId]: { ...prev[batchId], status: 'failed' } }));
+      }
+    }, 2000);
+  };
+
+  const handleAttachClick = () => fileInputRef.current?.click();
 
   const handleLogout = () => {
     localStorage.clear();
@@ -159,14 +224,24 @@ export default function ChatPage() {
           ))}
           {isAiTyping && (<div className="flex justify-start"><div className="max-w-xs md:max-w-md p-3 rounded-lg bg-gray-700 text-gray-400"><p className="animate-pulse">...</p></div></div>)}
         </div>
+        <div className="fixed bottom-24 right-8 w-80 space-y-4">
+          {Object.entries(uploadProgress).map(([batchId, { status, progress, totalImages, imageUrls }]) => (
+            <div key={batchId} className="bg-gray-700 p-4 rounded-lg shadow-lg border border-gray-600">
+              {status === 'processing' && (<><p className="text-sm font-medium text-gray-200 mb-2">Traitement de {totalImages} images... ({Math.round(progress || 0)}%)</p><div className="w-full bg-gray-600 rounded-full h-2.5"><div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${progress || 0}%` }}></div></div></>)}
+              {status === 'completed' && (<div><p className="text-sm font-medium text-green-400 mb-3">✅ Traitement terminé. Images ajoutées :</p><div className="grid grid-cols-3 gap-2">{imageUrls?.map((url, index) => (<img key={index} src={url} alt={`Image traitée ${index + 1}`} className="w-full h-20 object-cover rounded-md"/>))}</div></div>)}
+              {status === 'failed' && (<p className="text-sm font-medium text-red-400">❌ Le traitement a échoué.</p>)}
+            </div>
+          ))}
+        </div>
       </main>
 
       <footer className="bg-gray-800 border-t border-gray-700 p-4">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-          {/* Le bouton d'upload n'est plus pertinent ici, car il est lié au JEU et non à la CONVERSATION */}
-          <input type="text" disabled={isAiTyping} className="flex-grow w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-100 placeholder-gray-400"
-            placeholder="Écrivez votre message..." value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} />
-          <button type="submit" disabled={isAiTyping} className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-500 transition-colors">
+          {isUserOwner && (<button type="button" onClick={handleAttachClick} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></button>)}
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
+          <input type="text" disabled={!conversationId || isAiTyping} className="flex-grow w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-100 placeholder-gray-400"
+            placeholder={!conversationId ? "Chargement..." : "Écrivez votre message..."} value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} />
+          <button type="submit" disabled={!conversationId || isAiTyping} className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-500 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
           </button>
         </form>

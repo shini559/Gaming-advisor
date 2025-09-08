@@ -1,10 +1,10 @@
-# GameAdvisor API v2
+# GameAdvisor API
 
 Une API FastAPI complète et sophistiquée qui utilise l'Intelligence Artificielle pour analyser les livres de règles de jeux de société et fournir une assistance en temps réel aux joueurs.
 
 ## 🎯 Vision du Projet
 
-GameAdvisor API v2 est une refonte complète utilisant les principes d'architecture propre (Clean Architecture) pour créer un assistant IA spécialisé dans les jeux de société. L'application analyse automatiquement les livrets de règles (photos/PDFs) via les services Azure AI et fournit une assistance conversationnelle intelligente pendant le jeu.
+GameAdvisor API utilise les principes d'architecture propre (Clean Architecture) pour créer un assistant IA spécialisé dans les jeux de société. L'application analyse automatiquement les livrets de règles (photos/PDFs) via les services Azure AI et fournit une assistance conversationnelle intelligente pendant le jeu.
 
 ### Fonctionnalités Principales
 

@@ -1,15 +1,11 @@
-// src/app/games/create/page.tsx
 "use client";
 
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// Note: fetchWithAuth n'est pas utilisé ici car FormData est un cas spécial
-// On utilise fetch directement pour que le navigateur gère bien les en-têtes.
 
 export default function CreateGamePage() {
   const router = useRouter();
-  // Référence pour l'input file caché
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // États pour les champs du formulaire
@@ -45,7 +41,7 @@ export default function CreateGamePage() {
       formData.append('title', title);
       formData.append('description', description);
       formData.append('publisher', publisher);
-      formData.append('is_public', 'false'); // FormData envoie les valeurs en texte
+      formData.append('is_public', 'false');
       if (avatar) {
         formData.append('avatar', avatar);
       }
@@ -54,7 +50,6 @@ export default function CreateGamePage() {
       const response = await fetch('https://gameadvisor-api-containerapp.purpleplant-bc5dabd4.francecentral.azurecontainerapps.io/games/create', {
         method: 'POST',
         headers: {
-          // IMPORTANT: Ne pas mettre 'Content-Type'. Le navigateur le fait pour nous avec FormData.
           'Authorization': `Bearer ${accessToken}`,
         },
         body: formData,
@@ -134,7 +129,7 @@ export default function CreateGamePage() {
               <textarea id="description" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
 
-            {/* --- SECTION AVATAR AVEC LE NOUVEAU DESIGN --- */}
+            {/* --- SECTION AVATAR --- */}
             <div>
               <label className="block text-sm font-medium text-gray-300">Avatar du jeu</label>
               <div

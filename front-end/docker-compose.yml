@@ -3,7 +3,7 @@ version: '3.8'
 services:
   gameadvisor-front:
     build:
-      context: .
+      context: gaming-advisor
       dockerfile: Dockerfile
     container_name: gameadvisor-front
     ports:

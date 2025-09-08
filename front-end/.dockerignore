@@ -38,8 +38,8 @@ Thumbs.db
 .gitignore
 
 # Docker
-Dockerfile*
-docker-compose*.yml
+Dockerfile
+docker-compose.yml
 .dockerignore
 
 # Documentation (keeping CLAUDE.md as it's useful)

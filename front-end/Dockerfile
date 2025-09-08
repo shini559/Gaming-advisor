@@ -10,7 +10,7 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY gaming-advisor .
 
 ENV NEXT_TELEMETRY_DISABLED 1
 

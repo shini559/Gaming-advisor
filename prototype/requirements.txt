@@ -1,0 +1,15 @@
+IPython
+langchain
+langchain-community
+langchain-openai
+langchain-deepseek
+langchain-ollama
+langchain-chroma
+chromadb
+streamlit
+streamlit-extras
+openai
+python-dotenv
+PyMuPDF
+pillow
+pytest

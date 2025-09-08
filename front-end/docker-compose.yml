@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  gameadvisor-front:
+    build:
+      context: gaming-advisor
+      dockerfile: Dockerfile
+    container_name: gameadvisor-front
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

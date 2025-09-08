@@ -1,0 +1,29 @@
+services:
+  # FastAPI Application
+  gameadvisor-api:
+    build: .
+    container_name: gameadvisor-api
+    ports:
+      - "8000:8000"
+    environment:
+      # API Configuration
+      - API_TITLE=GameAdvisor API v2
+      - API_VERSION=2.0.0
+      - DEBUG=false
+      
+      # Database (to be set via .env file or Azure App Service configuration)
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL_MODE=${DB_SSL_MODE:-require}
+      
+      # File Storage
+      - UPLOAD_DIR=/app/uploads
+      - MAX_FILE_SIZE=52428800  # 50MB
+    
+    volumes:
+      - ./uploads:/app/uploads
+    
+    restart: unless-stopped

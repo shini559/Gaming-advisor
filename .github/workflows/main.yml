@@ -1,0 +1,33 @@
+name: first CI-CD
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    lint:
+        name: Linting 
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Configuration python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.11'
+            - name: Installation des dépendances
+              run: |
+                python -m pip install --upgrade pip
+                pip install flake8
+
+            - name: exécution de flake8
+              run: |
+                flake8 . --count --show-source --statistics
+            
+
+

@@ -56,7 +56,7 @@ jobs:
           pip install pytest_asyncio
           pip install pytest-cov
           # Installe les libs du projet si le fichier existe
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f API/requirements.txt ]; then pip install -r API/requirements.txt; fi
 
       - name: exécution de pytest
         run: |

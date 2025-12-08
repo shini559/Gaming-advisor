@@ -53,6 +53,8 @@ jobs:
           # Dépendances système pour PyMuPDF (fitz)
           sudo apt-get update && sudo apt-get install -y libgl1
           pip install pytest
+          pip install pytest_asyncio
+          pip install pytest-cov
           # Installe les libs du projet si le fichier existe
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 

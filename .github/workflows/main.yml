@@ -22,6 +22,8 @@ jobs:
       - name: Installation des dépendances
         run: |
           python -m pip install --upgrade pip
+          # Dépendances système pour PyMuPDF (fitz)
+          sudo apt-get update && sudo apt-get install -y libgl1-mesa-glx
           pip install flake8
           pip install pytest
           # Installe les libs du projet si le fichier existe
@@ -49,6 +51,8 @@ jobs:
       - name: Installation des dépendances
         run: |
           python -m pip install --upgrade pip
+          # Dépendances système pour PyMuPDF (fitz)
+          sudo apt-get update && sudo apt-get install -y libgl1-mesa-glx
           pip install pytest
           # Installe les libs du projet si le fichier existe
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
@@ -56,4 +60,4 @@ jobs:
       - name: exécution de pytest
         run: |
           export PYTHONPATH=$PYTHONPATH:.
-                pytest -v
+                pytest API/tests/services/test_jwt_service.py

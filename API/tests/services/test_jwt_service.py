@@ -8,7 +8,7 @@ from app.domain.ports.services.jwt_service import IJWTService
 from app.services.jwt_service import JWTService
 from app.config import settings
 
-
+@pytest.mark.ci_test
 class TestJWTService:
     @pytest.fixture
     def jwt_service(self) -> IJWTService:

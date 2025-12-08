@@ -57,3 +57,5 @@ types-redis                      # Type hints pour Redis
 
 aiohttp
 starlette
+langchain-openai
+pymupdf

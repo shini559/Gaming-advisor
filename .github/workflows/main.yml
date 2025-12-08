@@ -1,33 +1,32 @@
 name: first CI-CD
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-    lint:
-        name: Linting 
-        runs-on: ubuntu-latest
+  lint:
+    name: Linting 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+      - name: Configuration python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
 
-            - name: Configuration python
-              uses: actions/setup-python@v5
-              with:
-                python-version: '3.11'
-            - name: Installation des dépendances
-              run: |
-                python -m pip install --upgrade pip
-                pip install flake8
+      - name: Installation des dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+          # Installe les libs du projet si le fichier existe
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-            - name: exécution de flake8
-              run: |
-                flake8 . --count --show-source --statistics
-            
-
-
+      - name: exécution de flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics

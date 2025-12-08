@@ -55,4 +55,5 @@ jobs:
 
       - name: exécution de pytest
         run: |
-          pytest -v
+          export PYTHONPATH=$PYTHONPATH:.
+                pytest -v

@@ -1,4 +1,5 @@
 import base64
+import time
 from io import BytesIO
 from typing import BinaryIO, Optional
 import asyncio
@@ -9,6 +10,8 @@ from PIL import Image
 from app.config import settings
 from app.domain.entities.vector_search_types import ProcessingType
 from app.domain.ports.services.ai_processing_service import IAIProcessingService, AIProcessingResult
+from app.services.monitoring_service import monitoring_service
+from app.services.structured_logger import ai_logger
 
 
 class OpenAIProcessingService(IAIProcessingService):
@@ -136,6 +139,10 @@ class OpenAIProcessingService(IAIProcessingService):
 
   async def _extract_text(self, image_base64: str) -> str:
       """Extrait le texte de l'image (OCR)"""
+      start = time.perf_counter()
+      success = True
+      tokens_prompt = tokens_completion = 0
+      model = settings.azure_openai_vision_deployment or "unknown"
       try:
           response = await self.client.chat.completions.create(
               model=settings.azure_openai_vision_deployment,
@@ -153,13 +160,26 @@ class OpenAIProcessingService(IAIProcessingService):
               ],
               max_tokens=1500
           )
+          if response.usage:
+              tokens_prompt = response.usage.prompt_tokens or 0
+              tokens_completion = response.usage.completion_tokens or 0
           return response.choices[0].message.content or ""
       except Exception as e:
-          print(f"OCR Error: {e}")
+          success = False
+          ai_logger.ai_call(operation="ocr", model=model, latency=time.perf_counter() - start, success=False, error=str(e))
           return ""
+      finally:
+          latency = time.perf_counter() - start
+          monitoring_service.record_openai_call(model=model, tokens_prompt=tokens_prompt, tokens_completion=tokens_completion, latency=latency, success=success, operation="ocr")
+          if success:
+              ai_logger.ai_call(operation="ocr", model=model, latency=latency, tokens_prompt=tokens_prompt, tokens_completion=tokens_completion)
 
   async def _describe_image(self, image_base64: str) -> str:
       """Décrit les éléments visuels de l'image"""
+      start = time.perf_counter()
+      success = True
+      tokens_prompt = tokens_completion = 0
+      model = settings.azure_openai_vision_deployment or "unknown"
       try:
           response = await self.client.chat.completions.create(
               model=settings.azure_openai_vision_deployment,
@@ -177,13 +197,26 @@ class OpenAIProcessingService(IAIProcessingService):
               ],
               max_tokens=800
           )
+          if response.usage:
+              tokens_prompt = response.usage.prompt_tokens or 0
+              tokens_completion = response.usage.completion_tokens or 0
           return response.choices[0].message.content or ""
       except Exception as e:
-          print(f"Description Error: {e}")
+          success = False
+          ai_logger.ai_call(operation="describe", model=model, latency=time.perf_counter() - start, success=False, error=str(e))
           return ""
+      finally:
+          latency = time.perf_counter() - start
+          monitoring_service.record_openai_call(model=model, tokens_prompt=tokens_prompt, tokens_completion=tokens_completion, latency=latency, success=success, operation="describe")
+          if success:
+              ai_logger.ai_call(operation="describe", model=model, latency=latency, tokens_prompt=tokens_prompt, tokens_completion=tokens_completion)
 
   async def _label_image(self, image_base64: str) -> list[str]:
       """Identifie et labellise les composants de l'image"""
+      start = time.perf_counter()
+      success = True
+      tokens_prompt = tokens_completion = 0
+      model = settings.azure_openai_vision_deployment or "unknown"
       try:
           response = await self.client.chat.completions.create(
               model=settings.azure_openai_vision_deployment,
@@ -201,29 +234,49 @@ class OpenAIProcessingService(IAIProcessingService):
               ],
               max_tokens=300
           )
+          if response.usage:
+              tokens_prompt = response.usage.prompt_tokens or 0
+              tokens_completion = response.usage.completion_tokens or 0
 
           labels_text = response.choices[0].message.content or ""
-          # Parse les labels séparés par des virgules
           return [label.strip() for label in labels_text.split(',') if label.strip()]
       except Exception as e:
-          print(f"Labeling Error: {e}")
+          success = False
+          ai_logger.ai_call(operation="labeling", model=model, latency=time.perf_counter() - start, success=False, error=str(e))
           return []
+      finally:
+          latency = time.perf_counter() - start
+          monitoring_service.record_openai_call(model=model, tokens_prompt=tokens_prompt, tokens_completion=tokens_completion, latency=latency, success=success, operation="labeling")
+          if success:
+              ai_logger.ai_call(operation="labeling", model=model, latency=latency, tokens_prompt=tokens_prompt, tokens_completion=tokens_completion)
 
   async def _create_embedding(self, text: str) -> list[float]:
       """Crée un embedding vectoriel du texte"""
       if not text.strip():
           return [0.0] * settings.azure_openai_embedding_dimensions
 
+      start = time.perf_counter()
+      success = True
+      tokens_prompt = 0
+      model = settings.azure_openai_embedding_deployment or "unknown"
       try:
           response = await self.client.embeddings.create(
               model=settings.azure_openai_embedding_deployment,
               input=text,
               dimensions=settings.azure_openai_embedding_dimensions
           )
+          if response.usage:
+              tokens_prompt = response.usage.prompt_tokens or 0
           return response.data[0].embedding
       except Exception as e:
-          print(f"Embedding Error: {e}")
+          success = False
+          ai_logger.ai_call(operation="embedding", model=model, latency=time.perf_counter() - start, success=False, error=str(e))
           return [0.0] * settings.azure_openai_embedding_dimensions
+      finally:
+          latency = time.perf_counter() - start
+          monitoring_service.record_openai_call(model=model, tokens_prompt=tokens_prompt, tokens_completion=0, latency=latency, success=success, operation="embedding")
+          if success:
+              ai_logger.ai_call(operation="embedding", model=model, latency=latency, tokens_prompt=tokens_prompt)
 
   def _labels_to_searchable_text(self, labels) -> str:
       """Convertit les labels (list ou JSON string) en texte pour embedding"""

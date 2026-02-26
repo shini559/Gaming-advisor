@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from io import BytesIO
@@ -20,6 +21,8 @@ from app.domain.ports.repositories.image_batch_repository import IImageBatchRepo
 from app.domain.ports.services.ai_processing_service import IAIProcessingService
 from app.domain.ports.services.blob_storage_service import IBlobStorageService
 from app.domain.ports.services.queue_service import IQueueService
+from app.services.monitoring_service import monitoring_service
+from app.services.structured_logger import image_logger
 
 logger = logging.getLogger(__name__)
 
@@ -172,8 +175,23 @@ class ImageProcessingWorker:
 
             # 3. Traitement IA
             logger.info("🤖 Starting AI processing...")
+            ai_start = time.perf_counter()
             ai_result = await self.ai_service.process_image(image_content, job.filename)
+            ai_latency = time.perf_counter() - ai_start
             logger.info(f"🤖 AI processing result: success={ai_result.success}")
+
+            # Enregistrer le traitement d'image global
+            monitoring_service.record_image_processing(
+                latency=ai_latency,
+                processing_type="full_pipeline",
+                success=ai_result.success,
+            )
+            image_logger.image_processed(
+                filename=job.filename,
+                processing_type="full_pipeline",
+                latency=ai_latency,
+                success=ai_result.success,
+            )
 
             if ai_result.success:
                 # Architecture 3-paires : OCR, Description, Labels

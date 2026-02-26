@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import List, Dict, Any, Union
 from uuid import UUID
 
@@ -25,6 +26,8 @@ from app.domain.ports.services.vector_search_service import (
     IVectorSearchService,
     VectorSearchRequest
 )
+from app.services.monitoring_service import monitoring_service
+from app.services.structured_logger import agent_logger
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,11 @@ class GameRulesAgent(IGameRulesAgent):
     async def generate_response(self, request: AgentRequest) -> AgentResponse:
         """Génère une réponse à partir d'une question utilisateur"""
         logger.info(f"🚀 Agent démarrage - Question: '{request.user_message}', Game ID: {request.game_id}")
+        start = time.perf_counter()
+        success = True
+        confidence = 0.0
+        sources_count = 0
+        tokens_prompt = tokens_completion = 0
         
         try:
             request.validate()
@@ -66,8 +74,9 @@ class GameRulesAgent(IGameRulesAgent):
             
             # 2. Générer la réponse avec GPT-4 Vision (l'agent décidera si contexte suffisant)
             logger.info("🤖 Génération réponse GPT-4 Vision...")
-            response_content, sources, confidence = await self._generate_with_context(context)
-            logger.info(f"✅ Réponse générée - Sources: {len(sources)}, Confidence: {confidence}")
+            response_content, sources, confidence, tokens_prompt, tokens_completion = await self._generate_with_context(context)
+            sources_count = len(sources)
+            logger.info(f"✅ Réponse générée - Sources: {sources_count}, Confidence: {confidence}")
             
             # Créer un JSON complet avec toutes les valeurs de configuration
             search_method_config = {
@@ -81,10 +90,11 @@ class GameRulesAgent(IGameRulesAgent):
                 sources=sources,
                 confidence=confidence,
                 search_method=json.dumps(search_method_config),
-                reasoning=f"Réponse générée avec {len(sources)} source(s) - Recherche: {settings.vector_search_method}, Contenu: {settings.agent_content_fields}, Images: {settings.agent_send_images}"
+                reasoning=f"Réponse générée avec {sources_count} source(s) - Recherche: {settings.vector_search_method}, Contenu: {settings.agent_content_fields}, Images: {settings.agent_send_images}"
             )
             
         except Exception as e:
+            success = False
             logger.error(f"💥 ERREUR AGENT: {str(e)}")
             logger.error(f"💥 Type erreur: {type(e).__name__}")
             import traceback
@@ -103,6 +113,23 @@ class GameRulesAgent(IGameRulesAgent):
                 confidence=0.0,
                 search_method=json.dumps(search_method_config),
                 reasoning=f"Erreur: {str(e)}"
+            )
+        finally:
+            latency = time.perf_counter() - start
+            monitoring_service.record_agent_call(
+                latency=latency,
+                confidence=confidence,
+                sources_count=sources_count,
+                success=success,
+                tokens_prompt=tokens_prompt,
+                tokens_completion=tokens_completion,
+            )
+            agent_logger.agent_response(
+                question=request.user_message,
+                confidence=confidence,
+                sources_count=sources_count,
+                latency=latency,
+                success=success,
             )
     
     # MÉTHODE SUPPRIMÉE: is_game_rules_question()
@@ -179,8 +206,12 @@ class GameRulesAgent(IGameRulesAgent):
             search_method_used=settings.vector_search_method
         )
     
-    async def _generate_with_context(self, context: AgentContext) -> tuple[str, List[MessageSource], float]:
-        """Génère une réponse avec le contexte fourni - VERSION DÉCOUPLÉE"""
+    async def _generate_with_context(self, context: AgentContext) -> tuple[str, List[MessageSource], float, int, int]:
+        """Génère une réponse avec le contexte fourni - VERSION DÉCOUPLÉE
+        
+        Returns:
+            tuple: (response_content, sources, confidence, tokens_prompt, tokens_completion)
+        """
         
         # 1. IMAGES - découplé de la méthode de recherche
         images_content = []
@@ -277,6 +308,24 @@ Réponds en te basant uniquement sur le contexte fourni. Si tu ne trouves pas la
             
             response_content = response.choices[0].message.content
             
+            # Extraire tokens de la réponse GPT-4
+            tokens_prompt = 0
+            tokens_completion = 0
+            if response.usage:
+                tokens_prompt = response.usage.prompt_tokens or 0
+                tokens_completion = response.usage.completion_tokens or 0
+            
+            # Enregistrer cet appel OpenAI dans le monitoring
+            model = settings.azure_openai_vision_deployment or "unknown"
+            monitoring_service.record_openai_call(
+                model=model,
+                tokens_prompt=tokens_prompt,
+                tokens_completion=tokens_completion,
+                latency=0,  # La latence agent globale est gérée dans generate_response
+                success=True,
+                operation="agent_chat",
+            )
+            
             # 4. Construire les sources (découplé)
             sources = []
             for result in context.search_results:
@@ -312,7 +361,7 @@ Réponds en te basant uniquement sur le contexte fourni. Si tu ne trouves pas la
                 avg_similarity = 0.0
                 confidence = 0.1  # Confiance minimale
             
-            return response_content, sources, confidence
+            return response_content, sources, confidence, tokens_prompt, tokens_completion
             
         except Exception as e:
             logger.error(f"Erreur lors de la génération avec GPT-4: {str(e)}")

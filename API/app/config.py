@@ -129,6 +129,12 @@ Format JSON structuré pour la recherche:
     chat_max_title_length: int = 100
     chat_default_title: str = "Nouvelle conversation"
     
+    # Monitoring Configuration
+    enable_monitoring: bool = True
+    monitoring_cost_per_1k_prompt_tokens: float = 0.01
+    monitoring_cost_per_1k_completion_tokens: float = 0.03
+    monitoring_reset_interval_hours: int = 24
+
     # Agent IA Prompts
     agent_system_prompt: str = '''You are a game master & boardgame assistant. Your role is to assist board gamers in setting up their games, understanding the rules, calculate the score.
 

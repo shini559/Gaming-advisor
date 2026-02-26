@@ -14,6 +14,7 @@ from app.presentation.routes.games import router as games_router
 from app.presentation.routes.images import router as images_router
 from app.presentation.routes.chat import router as chat_router
 from app.services.blob_storage_service import AzureBlobStorageService
+from app.services.monitoring_service import monitoring_service
 from app.services.openai_processing_service import OpenAIProcessingService
 from app.services.redis_queue_service import RedisQueueService
 
@@ -147,7 +148,31 @@ async def root() -> dict:
 
 @app.get("/health")
 async def health_check() -> dict:
+    """Health check enrichi avec statut détaillé des services IA"""
+    if settings.enable_monitoring:
+        return monitoring_service.get_health_status()
     return {"status": "healthy"}
+
+
+@app.get("/monitoring/metrics")
+async def get_monitoring_metrics() -> dict:
+    """Dashboard JSON complet des métriques IA"""
+    if not settings.enable_monitoring:
+        return {"error": "Monitoring is disabled"}
+    return monitoring_service.get_metrics(
+        cost_per_1k_prompt=settings.monitoring_cost_per_1k_prompt_tokens,
+        cost_per_1k_completion=settings.monitoring_cost_per_1k_completion_tokens,
+    )
+
+
+@app.post("/monitoring/reset")
+async def reset_monitoring_metrics() -> dict:
+    """Réinitialise les compteurs de monitoring (dev/debug)"""
+    if not settings.enable_monitoring:
+        return {"error": "Monitoring is disabled"}
+    monitoring_service.reset()
+    return {"status": "reset", "message": "All monitoring metrics have been reset"}
+
 
 if __name__ == "__main__":
     uvicorn.run(
